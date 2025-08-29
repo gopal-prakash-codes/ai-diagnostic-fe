@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { loginUser } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -120,9 +121,11 @@ const Login = () => {
     try {
       const response = await loginUser(formData.email, formData.password);
       login(response.user);
+      toast.success('Successfully logged in!');
       navigate('/dashboard');
     } catch (error) {
       setError(error.message);
+      toast.error(error.message || 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -152,16 +155,7 @@ const Login = () => {
         {/* Login Form */}
         <div className="bg-white py-6 px-6 shadow-xl rounded-xl border border-gray-100">
           <form className="space-y-4" onSubmit={handleSubmit}>
-            {signupSuccess && (
-              <div className="bg-green-50 border-l-3 border-green-400 text-green-700 px-4 py-3 rounded-r-lg text-xs font-medium">
-                <div className="flex items-center">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Account created successfully! Please sign in with your credentials.
-                </div>
-              </div>
-            )}
+
             
             {error && (
               <div className="bg-red-50 border-l-3 border-red-400 text-red-700 px-4 py-3 rounded-r-lg text-xs font-medium">

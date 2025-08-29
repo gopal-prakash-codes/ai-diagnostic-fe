@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { registerUser } from '../api/api';
 const Eye = ({ className = "" }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,6 +104,11 @@ const Signup = () => {
       ...prev,
       [name]: fieldError
     }));
+    if (name === 'firstName' || name === 'lastName') {
+      if (fieldError && fieldError.includes('can only contain letters')) {
+        toast.error(fieldError);
+      }
+    }
 
     // Special case: re-validate confirmPassword when password changes
     if (name === 'password' && formData.confirmPassword) {
@@ -169,10 +175,12 @@ const Signup = () => {
         formData.lastName
       );
       
+      toast.success('Account created successfully! Please sign in with your credentials.');
       // Redirect to login page on successful signup
       navigate('/login', { state: { signupSuccess: true } });
     } catch (error) {
       setError(error.message);
+      toast.error(error.message || 'Failed to create account. Please try again.');
     } finally {
       setIsLoading(false);
     }

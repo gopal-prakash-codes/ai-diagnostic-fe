@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { createPatient, getPatients, analyzeDiagnosis } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import VoiceRecorder from './VoiceRecorder';
@@ -232,6 +233,7 @@ function Dashboard() {
       }
     } catch (error) {
       console.error('Error loading patients:', error);
+      toast.error('Failed to load patients. Please refresh the page.');
       setPatients([]);
     } finally {
       setLoading(false);
@@ -240,26 +242,40 @@ function Dashboard() {
   }, []);
 
   const handleCreatePatient = async () => {
-    if (!newPatient.name || !newPatient.age || !newPatient.gender) return;
+    if (!newPatient.name || !newPatient.age || !newPatient.gender) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    if (!/^[A-Za-z\s]+$/.test(newPatient.name.trim())) {
+      toast.error('Patient name can only contain letters and spaces');
+      return;
+    }
+
+    const age = parseInt(newPatient.age);
+    if (isNaN(age) || age < 1 || age > 150) {
+      toast.error('Please enter a valid age between 1 and 150');
+      return;
+    }
 
     try {
       const response = await createPatient({
-        name: newPatient.name,
-        age: parseInt(newPatient.age),
+        name: newPatient.name.trim(),
+        age: age,
         gender: newPatient.gender
       });
 
       if (response.success && response.data) {
-        // Handle both response.data.patient and response.data directly
         const newPatientData = response.data.patient || response.data;
         if (newPatientData && (newPatientData.id || newPatientData._id)) {
           setPatients([...patients, newPatientData]);
           setNewPatient({ name: '', age: '', gender: '' });
           setShowCreatePatient(false);
+          toast.success(`Patient "${newPatient.name}" created successfully!`);
         }
       }
     } catch (error) {
       console.error('Error creating patient:', error);
+      toast.error(error.message || 'Failed to create patient. Please try again.');
     }
   };
 
@@ -294,9 +310,11 @@ function Dashboard() {
         if (isRecording) {
           setIsRecording(false);
         }
+        toast.success('Diagnosis analysis completed successfully!');
       }
     } catch (error) {
       console.error('Error analyzing conversation:', error);
+      toast.error('Failed to analyze conversation. Please try again.');
     } finally {
       setIsAnalyzing(false);
     }

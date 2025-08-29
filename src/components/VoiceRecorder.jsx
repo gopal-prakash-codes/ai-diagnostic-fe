@@ -58,43 +58,35 @@ function VoiceRecorder({ onTranscriptUpdate, isRecording, onRecordingToggle, con
         console.log('Speech recognition result received');
         let finalTranscript = '';
         let interimTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
+        
+        let allFinalText = '';
+        let allInterimText = '';
+        
+        for (let i = 0; i < event.results.length; i++) {
           const result = event.results[i];
           const transcriptPart = result[0].transcript.trim();
           console.log(`Result ${i}: "${transcriptPart}" (final: ${result.isFinal}, confidence: ${result[0].confidence})`);
           
           if (result.isFinal) {
-            finalTranscript += transcriptPart;
+            allFinalText += (allFinalText ? ' ' : '') + transcriptPart;
           } else {
-            interimTranscript += transcriptPart;
+            allInterimText += (allInterimText ? ' ' : '') + transcriptPart;
           }
         }
         
-        const currentTranscript = transcriptRef.current;
-        console.log('Current transcript from ref:', currentTranscript);
-        console.log('New final transcript:', finalTranscript);
         
-        // Handle final transcript updates
-        if (finalTranscript) {
-          // Add proper spacing
-          let updatedTranscript = currentTranscript;
-          if (updatedTranscript && !updatedTranscript.endsWith(' ') && !updatedTranscript.endsWith('.') && !updatedTranscript.endsWith('!') && !updatedTranscript.endsWith('?')) {
-            updatedTranscript += ' ';
-          }
-          updatedTranscript += finalTranscript;
-          
-          console.log('Updated transcript:', updatedTranscript);
-          setTranscript(updatedTranscript);
-          transcriptRef.current = updatedTranscript;
+        if (allFinalText && allFinalText !== transcriptRef.current) {
+          setTranscript(allFinalText);
+          transcriptRef.current = allFinalText;
         }
 
-        // Send the combined content with interim results
+        // Send combined final + interim content to parent
         let fullContent = transcriptRef.current;
-        if (interimTranscript) {
+        if (allInterimText) {
           if (fullContent && !fullContent.endsWith(' ')) {
             fullContent += ' ';
           }
-          fullContent += interimTranscript;
+          fullContent += allInterimText;
         }
         
         console.log('Sending full content:', fullContent);
