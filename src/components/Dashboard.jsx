@@ -54,6 +54,24 @@ const RefreshCw = ({ className = "" }) => (
   </svg>
 );
 
+const Edit = ({ className = "" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+  </svg>
+);
+
+const Check = ({ className = "" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+  </svg>
+);
+
+const X = ({ className = "" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
+
 function PatientCard({ patient, onSelect, isSelected }) {
   const handleClick = (e) => {
     e.preventDefault();
@@ -66,21 +84,21 @@ function PatientCard({ patient, onSelect, isSelected }) {
 
   return (
     <div 
-      className={`cursor-pointer transition-all duration-200 bg-white rounded-xl border border-gray-200 shadow-sm ${isSelected ? 'ring-2 ring-gray-900' : 'hover:shadow-md'}`}
+      className={`cursor-pointer transition-all duration-200 bg-white rounded-lg border border-gray-200 shadow-sm ${isSelected ? 'ring-2 ring-blue-500 border-blue-500' : 'hover:shadow-md hover:border-gray-300'}`}
       onClick={handleClick}
       style={{ userSelect: 'none' }}
     >
-      <div className="px-6 py-4">
+      <div className="px-4 py-3">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-            <User className="w-5 h-5 text-gray-600" />
+          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+            <User className="w-4 h-4 text-gray-600" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">{patient.name}</p>
-            <p className="text-sm text-gray-500">{patient.gender}, {patient.age} years</p>
+            <p className="text-xs text-gray-500">{patient.gender}, {patient.age}y</p>
           </div>
           {isSelected && (
-            <div className="w-3 h-3 bg-gray-900 rounded-full"></div>
+            <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
           )}
         </div>
       </div>
@@ -88,28 +106,128 @@ function PatientCard({ patient, onSelect, isSelected }) {
   );
 }
 
-function ConversationDisplay({ conversation, isRecording }) {
+function ConversationDisplay({ conversation, isRecording, onConversationUpdate }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedText, setEditedText] = useState('');
+  const textareaRef = useRef(null);
+
+  const handleEdit = () => {
+    setEditedText(conversation || '');
+    setIsEditing(true);
+    // Focus textarea after render
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(textareaRef.current.value.length, textareaRef.current.value.length);
+      }
+    }, 100);
+  };
+
+  const handleSave = () => {
+    if (onConversationUpdate) {
+      onConversationUpdate(editedText);
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditedText('');
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      handleCancel();
+    } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      handleSave();
+    }
+  };
+
   return (
     <Card className="mt-4">
-      <CardHeader>
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Live Conversation</h3>
-          {isRecording && (
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-              <span className="text-sm text-red-600 font-medium">Recording...</span>
-            </div>
-          )}
+          <h3 className="text-lg font-semibold text-gray-900">Live Transcription</h3>
+          <div className="flex items-center space-x-2">
+            {conversation && !isRecording && !isEditing && (
+              <Button
+                onClick={handleEdit}
+                variant="outline"
+                size="sm"
+                className="flex-shrink-0"
+              >
+                <Edit className="w-4 h-4 mr-1" />
+                Edit
+              </Button>
+            )}
+            {isEditing && (
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <Button
+                  onClick={handleSave}
+                  variant="primary"
+                  size="sm"
+                  className="flex-1 sm:flex-initial"
+                >
+                  <Check className="w-4 h-4 mr-1" />
+                  Save
+                </Button>
+                <Button
+                  onClick={handleCancel}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 sm:flex-initial"
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Cancel
+                </Button>
+              </div>
+            )}
+            {isRecording && (
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-red-600 font-medium">Recording...</span>
+              </div>
+            )}
+          </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="bg-gray-50 rounded-lg p-4 min-h-32 max-h-64 overflow-y-auto">
-          {conversation ? (
-            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{conversation}</p>
+      <CardContent className="pt-0">
+        <div className={`rounded-lg p-4 min-h-40 max-h-80 overflow-y-auto border mt-4 ${isEditing ? 'bg-white border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
+          {isEditing ? (
+            <textarea
+              ref={textareaRef}
+              value={editedText}
+              onChange={(e) => setEditedText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="w-full h-64 bg-transparent border-none p-0 text-sm text-gray-700 leading-relaxed resize-none focus:outline-none placeholder-gray-400"
+              placeholder="Edit your transcription here..."
+            />
+          ) : conversation ? (
+            <div className="relative group">
+              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed pt-2">{conversation}</p>
+              {!isRecording && (
+                <div className="absolute top-4 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    onClick={handleEdit}
+                    variant="outline"
+                    size="sm"
+                    className="bg-white shadow-sm"
+                  >
+                    <Edit className="w-3 h-3" />
+                  </Button>
+                </div>
+              )}
+            </div>
           ) : (
-            <div className="text-center text-gray-500">
-              {/* <p className="text-sm italic">Start recording to see conversation...</p> */}
-              <p className="text-xs mt-1">Click the microphone to begin</p>
+            <div className="text-center text-gray-500 flex items-center justify-center h-32">
+              <div>
+                <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                </div>
+                <p className="text-sm">Click the microphone to start recording</p>
+              </div>
             </div>
           )}
         </div>
@@ -290,6 +408,10 @@ function Dashboard() {
     setConversation(transcript);
   };
 
+  const handleConversationUpdate = (updatedConversation) => {
+    setConversation(updatedConversation);
+  };
+
   const handleClearConversation = () => {
     setConversation('');
     setDiagnosis(null);
@@ -323,7 +445,7 @@ function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <Stethoscope className="h-8 w-8 text-gray-900" />
@@ -343,35 +465,34 @@ function Dashboard() {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
-          <div className="lg:col-span-1">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Patients</h2>
-              <div className="flex flex-wrap gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => selectedPatient && navigate(`/patient/${selectedPatient.id || selectedPatient._id}/history`, { 
-                    state: { patient: selectedPatient } 
-                  })}
-                  disabled={!selectedPatient}
-                  size="sm"
-                  className="flex-shrink-0"
-                >
-                  <History className="w-4 h-4 mr-2" />
-                  <span className="hidden sm:inline">Patient History</span>
-                  <span className="sm:hidden">History</span>
-                </Button>
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 lg:gap-6">
+          {/* Left Column - Patient History (3/12 = 25%) */}
+          <div className="md:col-span-1 lg:col-span-3">
+            <div className="flex flex-col gap-3 mb-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">Patients</h2>
                 <Button 
                   onClick={() => setShowCreatePatient(true)}
                   size="sm"
                   className="flex-shrink-0"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
-                  <span className="hidden sm:inline">New Patient</span>
-                  <span className="sm:hidden">New</span>
+                  <Plus className="w-4 h-4" />
                 </Button>
               </div>
+              {selectedPatient && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => selectedPatient && navigate(`/patient/${selectedPatient.id || selectedPatient._id}/history`, { 
+                    state: { patient: selectedPatient } 
+                  })}
+                  size="sm"
+                  className="w-full"
+                >
+                  <History className="w-4 h-4 mr-2" />
+                  View History
+                </Button>
+              )}
             </div>
 
             <div className="space-y-3">
@@ -401,54 +522,48 @@ function Dashboard() {
             </div>
           </div>
 
-          <div className="lg:col-span-2">
+          {/* Middle Column - Transcription (6/12 = 50%) */}
+          <div className="md:col-span-1 lg:col-span-6">
             {selectedPatient ? (
               <>
-                
                 <Card>
-                  <CardHeader className="p-4 sm:p-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-                      <div className="flex-shrink-0">
-                        <h3 className="text-lg sm:text-xl font-semibold text-gray-900">{selectedPatient.name}</h3>
-                        <p className="text-sm text-gray-500">{selectedPatient.gender}, {selectedPatient.age} years</p>
+                  <CardHeader className="p-4">
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-xl font-semibold text-gray-900">{selectedPatient.name}</h3>
+                          <p className="text-sm text-gray-500">{selectedPatient.gender}, {selectedPatient.age} years old</p>
+                        </div>
+                        <VoiceRecorder
+                          isRecording={isRecording}
+                          onRecordingToggle={handleRecordingToggle}
+                          onTranscriptUpdate={handleTranscriptUpdate}
+                          conversationText={conversation}
+                        />
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                      
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                        <Button
+                          onClick={handleClearConversation}
+                          disabled={!conversation.trim() && !isRecording}
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                        >
+                          <Trash className="w-4 h-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Clear</span>
+                        </Button>
                         
-                        {/* Show voice recorder and diagnosis buttons when no diagnosis */}
-                        {!diagnosis && (
-                          <>
-                            <VoiceRecorder
-                              isRecording={isRecording}
-                              onRecordingToggle={handleRecordingToggle}
-                              onTranscriptUpdate={handleTranscriptUpdate}
-                              conversationText={conversation}
-                            />
-                            
-                            {/* Clear conversation button */}
-                            <Button
-                              onClick={handleClearConversation}
-                              disabled={!conversation.trim() && !isRecording}
-                              variant="outline"
-                              size="sm"
-                              className="flex-shrink-0"
-                            >
-                              <Trash className="w-4 h-4 mr-2" />
-                              Clear
-                            </Button>
-                            
-                            <Button
-                              onClick={handleSendForDiagnosis}
-                              disabled={!conversation.trim() || isAnalyzing}
-                              variant={conversation.trim() ? 'primary' : 'secondary'}
-                              size="sm"
-                              className="flex-shrink-0"
-                            >
-                              <Send className="w-4 h-4 mr-2" />
-                              <span className="hidden sm:inline">{isAnalyzing ? 'Analyzing...' : 'Send for Diagnosis'}</span>
-                              <span className="sm:hidden">{isAnalyzing ? 'Analyzing...' : 'Send'}</span>
-                            </Button>
-                          </>
-                        )}
+                        <Button
+                          onClick={handleSendForDiagnosis}
+                          disabled={!conversation.trim() || isAnalyzing}
+                          variant={conversation.trim() ? 'primary' : 'secondary'}
+                          size="sm"
+                          className="flex-1"
+                        >
+                          <Send className="w-4 h-4 sm:mr-2" />
+                          <span className="hidden sm:inline">{isAnalyzing ? 'Analyzing...' : 'Analyze'}</span>
+                        </Button>
                         
                         {/* Show new analysis button when diagnosis is available */}
                         {diagnosis && (
@@ -456,10 +571,10 @@ function Dashboard() {
                             onClick={handleClearConversation}
                             variant="primary"
                             size="sm"
-                            className="flex-shrink-0"
+                            className="flex-1"
                           >
-                            <RefreshCw className="w-4 h-4 mr-2" />
-                            New Analysis
+                            <RefreshCw className="w-4 h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">New Analysis</span>
                           </Button>
                         )}
                       </div>
@@ -467,20 +582,27 @@ function Dashboard() {
                   </CardHeader>
                 </Card>
 
-                {!diagnosis && (
-                  <ConversationDisplay conversation={conversation} isRecording={isRecording} />
-                )}
-                
-                <DiagnosisResult diagnosis={diagnosis} />
+                {/* Always show transcription */}
+                <ConversationDisplay 
+                  conversation={conversation} 
+                  isRecording={isRecording} 
+                  onConversationUpdate={handleConversationUpdate}
+                />
               </>
             ) : (
-              <Card>
-                <CardContent className="text-center py-16">
-                  <Stethoscope className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Patient</h3>
-                  <p className="text-sm text-gray-500">Choose a patient to start conversation recording</p>
+              <Card className="h-fit">
+                <CardContent className="text-center py-20">
+                  <Stethoscope className="w-20 h-20 text-gray-400 mx-auto mb-6" />
+                  <h3 className="text-xl font-medium text-gray-900 mb-3">Select a Patient</h3>
+                  <p className="text-gray-500">Choose a patient from the left panel to start recording and analyzing conversations</p>
                 </CardContent>
               </Card>
+            )}
+          </div>
+
+          <div className="md:col-span-2 lg:col-span-3">
+            {selectedPatient && diagnosis && (
+              <DiagnosisResult diagnosis={diagnosis} />
             )}
           </div>
         </div>
