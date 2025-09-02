@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+
 const Mic = ({ className = "" }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
@@ -20,42 +21,7 @@ function VoiceRecorder({ onTranscriptUpdate, isRecording, onRecordingToggle, con
   const transcriptRef = useRef('');
   const onTranscriptUpdateRef = useRef(onTranscriptUpdate);
   const lastRestartTime = useRef(0);
-  const processedResultsRef = useRef(0); 
-  const lastInterimTextRef = useRef(''); 
-  const interimStabilityTimeoutRef = useRef(null); 
-  const lastSentContentRef = useRef(''); 
-  const watchdogTimeoutRef = useRef(null); 
-  const lastActivityTimeRef = useRef(Date.now()); 
-  const startWatchdog = useCallback(() => {
-    if (watchdogTimeoutRef.current) {
-      clearTimeout(watchdogTimeoutRef.current);
-    }
-    
-    watchdogTimeoutRef.current = setTimeout(() => {
-      const now = Date.now();
-      const timeSinceActivity = now - lastActivityTimeRef.current;
-      if (timeSinceActivity > 15000 && isRecordingRef.current) {
-        if (recognition) {
-          try {
-            recognition.stop();
-            setTimeout(() => {
-              if (isRecordingRef.current) {
-                lastActivityTimeRef.current = Date.now();
-                recognition.start();
-              }
-            }, 100);
-          } catch (error) {
-            console.error('Watchdog: Error restarting recognition:', error);
-          }
-        }
-      }
-      
-      if (isRecordingRef.current) {
-        startWatchdog();
-      }
-    }, 5000); 
-  }, [recognition]);
-  
+  const lastProcessedIndex = useRef(0);
   useEffect(() => {
     isRecordingRef.current = isRecording;
   }, [isRecording]);
@@ -76,9 +42,16 @@ function VoiceRecorder({ onTranscriptUpdate, isRecording, onRecordingToggle, con
       recognitionInstance.continuous = true;
       recognitionInstance.interimResults = true;
       recognitionInstance.lang = 'en-US';
-      recognitionInstance.maxAlternatives = 1; 
-      if ('speechSynthesis' in window) {
-        recognitionInstance.serviceURI = '';
+      recognitionInstance.maxAlternatives = 1; // Reduced for better performance
+      
+      // Enhanced settings for better speech detection
+      if ('serviceURI' in recognitionInstance) {
+        // Some browsers support additional settings
+        try {
+          recognitionInstance.maxAlternatives = 1;
+        } catch (e) {
+          console.log('Advanced speech settings not available');
+        }
       }
       if ('grammars' in recognitionInstance) {
         const grammar = '#JSGF V1.0; grammar words; public <word> = ' + 
@@ -93,96 +66,71 @@ function VoiceRecorder({ onTranscriptUpdate, isRecording, onRecordingToggle, con
       
 
       recognitionInstance.onresult = (event) => {
-        lastActivityTimeRef.current = Date.now(); 
+        console.log('Speech recognition result received, results count:', event.results.length);
+        console.log('Last processed index:', lastProcessedIndex.current);
         
-        if (processedResultsRef.current > event.results.length) {
-          processedResultsRef.current = event.results.length;
-        }
+        let newFinalTranscript = '';
+        let currentInterimTranscript = '';
         
-        let newFinalText = '';
-        let allInterimText = '';
-        
-        let highestProcessedIndex = processedResultsRef.current;
-        for (let i = processedResultsRef.current; i < event.results.length; i++) {
+        // Process only new results (from lastProcessedIndex onwards)
+        for (let i = lastProcessedIndex.current; i < event.results.length; i++) {
           const result = event.results[i];
-          const transcriptPart = result[0].transcript.trim();
-          if (result.isFinal && result[0].confidence > 0.3) {
-            newFinalText += (newFinalText ? ' ' : '') + transcriptPart;
-            highestProcessedIndex = i + 1; 
-          }
-        }
-        if (highestProcessedIndex > processedResultsRef.current) {
-          processedResultsRef.current = highestProcessedIndex;
-        }
-        for (let i = 0; i < event.results.length; i++) {
-          const result = event.results[i];
-          if (!result.isFinal && result[0].confidence > 0.1) { 
-            const transcriptPart = result[0].transcript.trim();
-            allInterimText += (allInterimText ? ' ' : '') + transcriptPart;
+          const transcript = result[0].transcript;
+          
+          if (result.isFinal) {
+            newFinalTranscript += transcript;
+            lastProcessedIndex.current = i + 1;
+            console.log(`Processed final result ${i}: "${transcript}"`);
           }
         }
         
-        if (newFinalText) {
-          const updatedTranscript = transcriptRef.current ? 
-            transcriptRef.current + ' ' + newFinalText : 
-            newFinalText;
+        // Get current interim results (always from the last final result onwards)
+        for (let i = lastProcessedIndex.current; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (!result.isFinal) {
+            currentInterimTranscript += result[0].transcript;
+          }
+        }
+        
+        console.log('New final transcript from this event:', newFinalTranscript);
+        console.log('Current interim transcript:', currentInterimTranscript);
+        
+        // Update stored transcript with new final results only
+        if (newFinalTranscript.trim()) {
+          const currentTranscript = transcriptRef.current || '';
+          const updatedTranscript = currentTranscript + (currentTranscript ? ' ' : '') + newFinalTranscript.trim();
+          
           setTranscript(updatedTranscript);
           transcriptRef.current = updatedTranscript;
-          lastInterimTextRef.current = ''; 
-          if (interimStabilityTimeoutRef.current) {
-            clearTimeout(interimStabilityTimeoutRef.current);
-            interimStabilityTimeoutRef.current = null;
-          }
+          console.log('Updated stored transcript:', updatedTranscript);
         }
-        if (allInterimText && allInterimText === lastInterimTextRef.current) {
-        } else if (allInterimText) {
-          lastInterimTextRef.current = allInterimText;
-          if (interimStabilityTimeoutRef.current) {
-            clearTimeout(interimStabilityTimeoutRef.current);
-          }
-          
-          interimStabilityTimeoutRef.current = setTimeout(() => {
-            if (lastInterimTextRef.current && isRecordingRef.current) {
-              const updatedTranscript = transcriptRef.current ? 
-                transcriptRef.current + ' ' + lastInterimTextRef.current : 
-                lastInterimTextRef.current;
-              setTranscript(updatedTranscript);
-              transcriptRef.current = updatedTranscript;
-              lastInterimTextRef.current = '';
-              if (updatedTranscript !== lastSentContentRef.current) {
-                lastSentContentRef.current = updatedTranscript;
-                onTranscriptUpdateRef.current(updatedTranscript);
-              }
-            }
-          }, 1000);
-        }
-        let fullContent = transcriptRef.current;
-        if (allInterimText) {
-          if (fullContent && !fullContent.endsWith(' ')) {
-            fullContent += ' ';
-          }
-          fullContent += allInterimText;
-        }
-        if (fullContent !== lastSentContentRef.current) {
-          lastSentContentRef.current = fullContent;
-          onTranscriptUpdateRef.current(fullContent);
-        }
+
+        // Combine stored transcript with current interim results
+        const storedTranscript = transcriptRef.current || '';
+        const displayTranscript = storedTranscript + 
+          (storedTranscript && currentInterimTranscript.trim() ? ' ' : '') + 
+          currentInterimTranscript.trim();
+        
+        console.log('Sending to parent:', displayTranscript);
+        onTranscriptUpdateRef.current(displayTranscript);
       };
 
       recognitionInstance.onerror = (event) => {
         console.error('Speech recognition error:', event.error);
         switch (event.error) {
           case 'network':
-            console.log('Network error - will retry in 1 second');
-            setTimeout(() => {
-              if (isRecordingRef.current && recognitionInstance) {
-                try {
-                  recognitionInstance.start();
-                } catch (error) {
-                  console.error('Failed to restart after network error:', error);
+            console.log('Network error - will retry in 2 seconds');
+            if (isRecordingRef.current) {
+              setTimeout(() => {
+                if (isRecordingRef.current && recognitionInstance) {
+                  try {
+                    recognitionInstance.start();
+                  } catch (error) {
+                    console.error('Failed to restart after network error:', error);
+                  }
                 }
-              }
-            }, 1000);
+              }, 2000);
+            }
             break;
           case 'audio-capture':
             console.error('Audio capture error - check microphone permissions');
@@ -191,96 +139,73 @@ function VoiceRecorder({ onTranscriptUpdate, isRecording, onRecordingToggle, con
             console.error('Microphone permission denied');
             break;
           case 'no-speech':
-            console.log('No speech detected - continuing to listen');
-            break;
-          case 'aborted':
-            console.log('Speech recognition aborted - attempting restart');
+            console.log('No speech detected - immediately restarting for continuous operation');
+            // For truly continuous recognition, restart immediately on no-speech
             if (isRecordingRef.current) {
-              setTimeout(() => {
-                if (isRecordingRef.current && recognitionInstance) {
-                  try {
-                    lastActivityTimeRef.current = Date.now();
-                    recognitionInstance.start();
-                  } catch (error) {
-                    console.error('Failed to restart after abort:', error);
-                  }
-                }
-              }, 500);
+              try {
+                recognitionInstance.start();
+                console.log('Immediately restarted after no-speech');
+              } catch (error) {
+                console.error('Failed immediate restart after no-speech:', error);
+                // Let onend handler try
+              }
             }
             break;
-          case 'service-disconnect':
+          case 'aborted':
+            console.log('Speech recognition aborted - immediately restarting for continuous operation');
+            // For truly continuous recognition, restart immediately when aborted
             if (isRecordingRef.current) {
-              setTimeout(() => {
-                if (isRecordingRef.current && recognitionInstance) {
-                  try {
-                    lastActivityTimeRef.current = Date.now();
-                    recognitionInstance.start();
-                  } catch (error) {
-                    console.error('Failed to restart after service disconnect:', error);
-                  }
-                }
-              }, 1000);
+              try {
+                recognitionInstance.start();
+                console.log('Immediately restarted after abort');
+              } catch (error) {
+                console.error('Failed immediate restart after abort:', error);
+                // Let onend handler try
+              }
             }
             break;
           default:
             console.error('Unknown speech recognition error:', event.error);
-            if (isRecordingRef.current) {
-              setTimeout(() => {
-                if (isRecordingRef.current && recognitionInstance) {
-                  try {
-                    lastActivityTimeRef.current = Date.now();
-                    recognitionInstance.start();
-                  } catch (error) {
-                    console.error('Failed to restart after unknown error:', error);
-                  }
-                }
-              }, 1000);
-            }
+            // For unknown errors, let onend handler manage restart
+            console.log('Will restart via onend handler if needed');
         }
       };
 
       recognitionInstance.onend = () => {
-        if (isRecordingRef.current && !isInitializing) {
-          const now = Date.now();
-          const timeSinceLastRestart = now - lastRestartTime.current;
-          const minRestartInterval = 100; 
+        console.log('Recognition ended, isRecording from ref:', isRecordingRef.current);
+        
+        // Immediately restart if still recording - NO DELAYS for truly continuous recognition
+        if (isRecordingRef.current) {
+          console.log('Immediately restarting recognition for continuous operation...');
           
-          const restartDelay = Math.max(50, minRestartInterval - timeSinceLastRestart); 
-          
-          const timeoutId = setTimeout(() => {
-            if (isRecordingRef.current && recognitionInstance) {
-              try {
-                lastRestartTime.current = Date.now();
-                recognitionInstance.start();
-              } catch (error) {
-                console.error('Error restarting recognition:', error);
-                if (error.name === 'InvalidStateError') {
-                  setTimeout(() => {
-                    if (isRecordingRef.current) {
-                      try {
-                        lastRestartTime.current = Date.now();
-                        recognitionInstance.start();
-                      } catch (retryError) {
-                        console.error('Failed to restart recognition on retry:', retryError);
-                      }
-                    }
-                  }, 200); 
+          try {
+            recognitionInstance.start();
+            console.log('Recognition restarted immediately');
+          } catch (error) {
+            console.error('Error restarting recognition:', error);
+            
+            // If immediate restart fails, try once more with minimal delay
+            const timeoutId = setTimeout(() => {
+              if (isRecordingRef.current && recognitionInstance) {
+                try {
+                  recognitionInstance.start();
+                  console.log('Recognition restarted after error');
+                } catch (retryError) {
+                  console.error('All restart attempts failed:', retryError);
                 }
               }
-            }
-          }, restartDelay);
-          
-          setRestartTimeoutId(timeoutId);
-        } 
+            }, 10); // Minimal 10ms delay only if immediate restart fails
+            
+            setRestartTimeoutId(timeoutId);
+          }
+        } else {
+          console.log('Not restarting - user manually stopped recording');
+        }
       };
 
       recognitionInstance.onstart = () => {
-        if (!transcriptRef.current) {
-          processedResultsRef.current = 0;
-        }
-        
-        lastActivityTimeRef.current = Date.now();
-        startWatchdog(); 
+        console.log('Recognition started');
+        lastProcessedIndex.current = 0; // Reset processing index for new session
         setIsInitializing(false);
       };
 
@@ -295,95 +220,79 @@ function VoiceRecorder({ onTranscriptUpdate, isRecording, onRecordingToggle, con
         clearTimeout(restartTimeoutId);
         setRestartTimeoutId(null);
       }
-      if (interimStabilityTimeoutRef.current) {
-        clearTimeout(interimStabilityTimeoutRef.current);
-        interimStabilityTimeoutRef.current = null;
-      }
-      if (watchdogTimeoutRef.current) {
-        clearTimeout(watchdogTimeoutRef.current);
-        watchdogTimeoutRef.current = null;
-      }
     };
   }, []);
 
   useEffect(() => {
-    
     if (recognition) {
       if (isRecording) {
-
+        console.log('User started recording - initializing recognition');
         setIsInitializing(true);
         try {
           recognition.start();
-
+          console.log('Recognition start command sent');
         } catch (error) {
-          console.error('Error starting recognition:', error);
+          console.error('Error sending recognition start command:', error);
           setIsInitializing(false);
+          
+          // Try to start again after a short delay if it failed
+          setTimeout(() => {
+            if (isRecordingRef.current) {
+              try {
+                console.log('Retrying recognition start...');
+                recognition.start();
+              } catch (retryError) {
+                console.error('Retry start failed:', retryError);
+                setIsInitializing(false);
+              }
+            }
+          }, 500);
         }
       } else {
-
-        recognition.stop();
+        console.log('User stopped recording - stopping recognition');
         setIsInitializing(false);
+        
+        // Clear any pending restart timeouts
         if (restartTimeoutId) {
+          console.log('Clearing pending restart timeout');
           clearTimeout(restartTimeoutId);
           setRestartTimeoutId(null);
         }
-        if (interimStabilityTimeoutRef.current) {
-          clearTimeout(interimStabilityTimeoutRef.current);
-          interimStabilityTimeoutRef.current = null;
-        }
-        if (watchdogTimeoutRef.current) {
-          clearTimeout(watchdogTimeoutRef.current);
-          watchdogTimeoutRef.current = null;
+        
+        // Stop recognition
+        try {
+          recognition.stop();
+        } catch (error) {
+          console.error('Error stopping recognition:', error);
         }
       }
     }
-  }, [isRecording, recognition]);
+  }, [isRecording, recognition, restartTimeoutId]);
 
   const handleToggleRecording = () => {
     onRecordingToggle();
   };
   const clearTranscript = useCallback(() => {
+    console.log('Clearing transcript');
     setTranscript('');
     transcriptRef.current = '';
-    lastInterimTextRef.current = '';
-    lastSentContentRef.current = '';
-    processedResultsRef.current = 0; 
-    if (interimStabilityTimeoutRef.current) {
-      clearTimeout(interimStabilityTimeoutRef.current);
-      interimStabilityTimeoutRef.current = null;
-    }
-    if (watchdogTimeoutRef.current) {
-      clearTimeout(watchdogTimeoutRef.current);
-      watchdogTimeoutRef.current = null;
-    }
+    lastProcessedIndex.current = 0; // Reset processing index when clearing
     onTranscriptUpdateRef.current('');
   }, []);
   useEffect(() => {
-    if (!isRecording) {
-      if (conversationText === '' && transcriptRef.current !== '') {
-        setTranscript('');
-        transcriptRef.current = '';
-        lastInterimTextRef.current = '';
-        lastSentContentRef.current = '';
-        processedResultsRef.current = 0;
-        if (interimStabilityTimeoutRef.current) {
-          clearTimeout(interimStabilityTimeoutRef.current);
-          interimStabilityTimeoutRef.current = null;
-        }
-        if (watchdogTimeoutRef.current) {
-          clearTimeout(watchdogTimeoutRef.current);
-          watchdogTimeoutRef.current = null;
-        }
-      }
-      else if (conversationText !== '' && transcript === '' && conversationText !== transcriptRef.current) {
-        setTranscript(conversationText);
-        transcriptRef.current = conversationText;
-        lastInterimTextRef.current = '';
-        lastSentContentRef.current = conversationText;
-      }
-    } else {
+    if (conversationText === '' && transcriptRef.current !== '') {
+      console.log('Parent cleared conversation, syncing internal state');
+      setTranscript('');
+      transcriptRef.current = '';
+      lastProcessedIndex.current = 0; // Reset processing index when parent clears
     }
-  }, [conversationText, transcript, isRecording]);
+    else if (conversationText !== '' && transcript === '') {
+      console.log('Syncing transcript with parent conversation');
+      setTranscript(conversationText);
+      transcriptRef.current = conversationText;
+      lastProcessedIndex.current = 0; // Reset processing index when syncing with parent
+    }
+  }, [conversationText, transcript]);
 
   return (
     <button
