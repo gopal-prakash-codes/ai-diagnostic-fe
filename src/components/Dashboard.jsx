@@ -5,6 +5,7 @@ import { createPatient, getPatients, analyzeDiagnosis } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import VoiceRecorder from './VoiceRecorder';
 import { Button, Card, CardHeader, CardContent, Input, Select, Modal, Badge } from './UI';
+import SpeechComp from './SpeechComp';
 
 const Plus = ({ className = "" }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -419,24 +420,31 @@ function Dashboard() {
   };
 
   const handleSendForDiagnosis = async () => {
-    if (!selectedPatient || !conversation.trim()) return;
+    if (!selectedPatient || !conversation.trim()) {
+      toast.error('Please select a patient and ensure there is conversation text to analyze');
+      return;
+    }
 
     try {
       setIsAnalyzing(true);
       const patientId = selectedPatient.id || selectedPatient._id;
       
+      // Stop recording if still active
+      if (isRecording) {
+        setIsRecording(false);
+      }
+      
       const response = await analyzeDiagnosis(patientId, conversation);
       
       if (response.success && response.data && response.data.analysis) {
         setDiagnosis(response.data.analysis);
-        if (isRecording) {
-          setIsRecording(false);
-        }
         toast.success('Diagnosis analysis completed successfully!');
+      } else {
+        toast.error('Analysis completed but no diagnosis data received');
       }
     } catch (error) {
       console.error('Error analyzing conversation:', error);
-      toast.error('Failed to analyze conversation. Please try again.');
+      toast.error(error.message || 'Failed to analyze conversation. Please try again.');
     } finally {
       setIsAnalyzing(false);
     }
@@ -534,47 +542,38 @@ function Dashboard() {
                           <h3 className="text-xl font-semibold text-gray-900">{selectedPatient.name}</h3>
                           <p className="text-sm text-gray-500">{selectedPatient.gender}, {selectedPatient.age} years old</p>
                         </div>
-                        <VoiceRecorder
+                        {/* <VoiceRecorder
                           isRecording={isRecording}
                           onRecordingToggle={handleRecordingToggle}
                           onTranscriptUpdate={handleTranscriptUpdate}
                           conversationText={conversation}
-                        />
+                        /> */}
                       </div>
                       
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                         <Button
-                          onClick={handleClearConversation}
-                          disabled={!conversation.trim() && !isRecording}
-                          variant="outline"
-                          size="sm"
-                          className="flex-1"
-                        >
-                          <Trash className="w-4 h-4 sm:mr-2" />
-                          <span className="hidden sm:inline">Clear</span>
-                        </Button>
-                        
-                        <Button
                           onClick={handleSendForDiagnosis}
-                          disabled={!conversation.trim() || isAnalyzing}
-                          variant={conversation.trim() ? 'primary' : 'secondary'}
+                          disabled={!conversation.trim() || isAnalyzing || isRecording}
+                          variant={conversation.trim() && !isRecording ? 'primary' : 'secondary'}
                           size="sm"
                           className="flex-1"
                         >
                           <Send className="w-4 h-4 sm:mr-2" />
-                          <span className="hidden sm:inline">{isAnalyzing ? 'Analyzing...' : 'Analyze'}</span>
+                          <span className="hidden sm:inline">
+                            {isAnalyzing ? 'Analyzing...' : isRecording ? 'Stop Recording First' : 'Analyze Conversation'}
+                          </span>
                         </Button>
                         
                         {/* Show new analysis button when diagnosis is available */}
-                        {diagnosis && (
+                        {(diagnosis || conversation.trim()) && (
                           <Button
                             onClick={handleClearConversation}
-                            variant="primary"
+                            variant="outline"
                             size="sm"
                             className="flex-1"
                           >
                             <RefreshCw className="w-4 h-4 sm:mr-2" />
-                            <span className="hidden sm:inline">New Analysis</span>
+                            <span className="hidden sm:inline">New Session</span>
                           </Button>
                         )}
                       </div>
@@ -582,11 +581,12 @@ function Dashboard() {
                   </CardHeader>
                 </Card>
 
-                {/* Always show transcription */}
-                <ConversationDisplay 
-                  conversation={conversation} 
-                  isRecording={isRecording} 
-                  onConversationUpdate={handleConversationUpdate}
+                {/* Live Transcription Component */}
+                <SpeechComp 
+                  onTranscriptUpdate={handleTranscriptUpdate}
+                  selectedPatient={selectedPatient}
+                  isRecording={isRecording}
+                  onRecordingToggle={setIsRecording}
                 />
               </>
             ) : (
