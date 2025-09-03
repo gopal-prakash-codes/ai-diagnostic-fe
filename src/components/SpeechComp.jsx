@@ -154,7 +154,7 @@ export default function SpeechComp({ onTranscriptUpdate, selectedPatient, isReco
           setLiveTranscript(newText);
           
           // Show success indicator briefly
-          toast.success("✓ Live", { autoClose: 1000, hideProgressBar: true, position: "bottom-right" });
+          // toast.success("✓ Live", { autoClose: 1000, hideProgressBar: true, position: "bottom-right" });
         } else {
           console.log('❌ No text received from live transcription');
         }
