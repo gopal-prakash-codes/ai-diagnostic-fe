@@ -171,6 +171,34 @@ export const transcribe = async (formData) => {
   return data;
 }
 
+export const transcribeWithSpeakers = async (formData) => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Authentication required. Please login again.');
+  }
+  
+  const res = await fetch(`${API_BASE_URL}api/diagnosis/transcribe-speakers`, {
+    method: "POST",
+    body: formData,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    }
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.error || `Speaker transcription failed: ${res.status} ${res.statusText}`);
+  }
+
+  const data = await res.json();
+  
+  if (!data.success) {
+    throw new Error(data.error || 'Speaker transcription failed');
+  }
+  
+  return data;
+}
+
 export const analyzeDiagnosis = async (patientId, conversationText) => {
   const token = getAuthToken();
   if (!token) {

@@ -5,7 +5,7 @@ import { createPatient, getPatients, analyzeDiagnosis } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import VoiceRecorder from './VoiceRecorder';
 import { Button, Card, CardHeader, CardContent, Input, Select, Modal, Badge } from './UI';
-import SpeechComp from './SpeechComp';
+import SpeechCompWithSpeakers from './SpeechCompWithSpeakers';
 
 const Plus = ({ className = "" }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -317,9 +317,11 @@ function Dashboard() {
   const [showCreatePatient, setShowCreatePatient] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [conversation, setConversation] = useState('');
+  const [speakers, setSpeakers] = useState([]);
   const [diagnosis, setDiagnosis] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [clearTrigger, setClearTrigger] = useState(0);
   
   const [newPatient, setNewPatient] = useState({
     name: '',
@@ -409,14 +411,27 @@ function Dashboard() {
     setConversation(transcript);
   };
 
+  const handleSpeakersUpdate = (speakerData) => {
+    setSpeakers(speakerData);
+    if (speakerData && speakerData.length > 0) {
+      const formattedConversation = speakerData
+        .map(segment => `${segment.speaker === 'A' ? 'Doctor' : 'Patient'}: ${segment.text}`)
+        .join('\n');
+      setConversation(formattedConversation);
+    }
+  };
+
   const handleConversationUpdate = (updatedConversation) => {
     setConversation(updatedConversation);
   };
 
   const handleClearConversation = () => {
     setConversation('');
+    setSpeakers([]);
     setDiagnosis(null);
     setIsRecording(false);
+    // Trigger clear in the SpeechCompWithSpeakers component
+    setClearTrigger(prev => prev + 1);
   };
 
   const handleSendForDiagnosis = async () => {
@@ -581,12 +596,14 @@ function Dashboard() {
                   </CardHeader>
                 </Card>
 
-                {/* Live Transcription Component */}
-                <SpeechComp 
+                {/* Live Transcription with Speaker Detection */}
+                <SpeechCompWithSpeakers 
                   onTranscriptUpdate={handleTranscriptUpdate}
+                  onSpeakersUpdate={handleSpeakersUpdate}
                   selectedPatient={selectedPatient}
                   isRecording={isRecording}
                   onRecordingToggle={setIsRecording}
+                  clearTrigger={clearTrigger}
                 />
               </>
             ) : (
