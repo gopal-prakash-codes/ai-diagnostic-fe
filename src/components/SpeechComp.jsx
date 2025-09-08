@@ -171,8 +171,22 @@ export default function SpeechComp({ onTranscriptUpdate, selectedPatient, isReco
 
   // Process complete recording with single API call
   const processCompleteRecording = async (mimeType) => {
+    console.log(`🔄 Processing complete recording - chunks available: ${audioChunksRef.current.length}`);
+    
+    // Always try to process remaining chunks, even if we have live transcript
     if (audioChunksRef.current.length === 0) {
-      toast.warning("No audio data recorded");
+      if (liveTranscript.trim()) {
+        console.log('📝 No audio chunks but preserving live transcript:', liveTranscript);
+        setTranscript(prev => {
+          const updatedText = prev ? `${prev} ${liveTranscript}` : liveTranscript;
+          console.log('💾 Final transcript with preserved live content:', updatedText);
+          return updatedText;
+        });
+        setLiveTranscript("");
+        toast.success("Live transcription preserved!");
+      } else {
+        toast.info("No audio data to process");
+      }
       return;
     }
 
@@ -183,72 +197,101 @@ export default function SpeechComp({ onTranscriptUpdate, selectedPatient, isReco
       const completeAudioBlob = new Blob(audioChunksRef.current, { type: mimeType });
       const totalSize = completeAudioBlob.size;
       
-      console.log(`Processing complete recording: ${totalSize} bytes, ${audioChunksRef.current.length} chunks`);
+      console.log(`🎵 Processing complete recording: ${totalSize} bytes, ${audioChunksRef.current.length} chunks`);
+      console.log(`📊 Current live transcript: "${liveTranscript}"`);
+      console.log(`📊 Current final transcript: "${transcript}"`);
       
-      if (totalSize < 1000) { // Less than 1KB might be too short
-        toast.warning("Recording too short. Please try speaking for a longer duration.");
-        return;
+      // Process even small chunks to capture any remaining speech
+      if (totalSize < 500) { 
+        console.log('⚠️ Small audio chunk detected, but processing anyway to capture remaining speech');
+        // Don't return early - still try to process
       }
 
       const formData = new FormData();
-      formData.append("file", completeAudioBlob, "recording.webm");
+      formData.append("file", completeAudioBlob, `final-recording-${Date.now()}.webm`);
 
+      console.log('🚀 Sending final audio blob for transcription...');
       const res = await transcribe(formData);
-      console.log('Complete transcription response:', res);
+      console.log('✅ Complete transcription response:', res);
       
       if (res && res.success && res.text) {
         const finalTranscriptText = res.text.trim();
         if (finalTranscriptText) {
-          // Use the more accurate final transcript, append to existing
+          console.log('🎯 Got final transcript from remaining chunks:', finalTranscriptText);
+          
+          // Append the final transcript from remaining chunks
           setTranscript(prev => {
             const updatedText = prev ? `${prev} ${finalTranscriptText}` : finalTranscriptText;
-            console.log('Final accurate transcript:', updatedText);
+            console.log('📝 Updated final transcript:', updatedText);
             return updatedText;
           });
           
-          // Clear live transcript since we have the final version
+          // Clear live transcript since we processed the final chunks
           setLiveTranscript("");
-          toast.success("Final transcription completed!");
-        } else if (liveTranscript) {
-          // If no final transcript but we have live transcript, use that
+          toast.success("Remaining audio chunks processed successfully!");
+        } else {
+          console.log('❌ Empty final transcript, checking for live transcript fallback');
+          // Fallback to live transcript if final processing returned empty
+          if (liveTranscript.trim()) {
+            setTranscript(prev => {
+              const updatedText = prev ? `${prev} ${liveTranscript}` : liveTranscript;
+              console.log('💾 Using live transcript as fallback:', updatedText);
+              return updatedText;
+            });
+            setLiveTranscript("");
+            toast.success("Live transcription preserved!");
+          } else {
+            toast.info("No additional speech detected in remaining chunks");
+          }
+        }
+      } else {
+        console.log('❌ API call failed or returned no success, using live transcript fallback');
+        // Fallback to live transcript if API failed
+        if (liveTranscript.trim()) {
           setTranscript(prev => {
             const updatedText = prev ? `${prev} ${liveTranscript}` : liveTranscript;
+            console.log('💾 API failed - using live transcript:', updatedText);
             return updatedText;
           });
           setLiveTranscript("");
-          toast.success("Live transcription saved!");
+          toast.info("Using live transcription (final processing failed)");
         } else {
-          toast.info("No speech detected in the recording");
+          toast.warning("Final transcription failed and no live transcript available");
         }
-      } else if (liveTranscript) {
-        // Fallback to live transcript if API failed
+      }
+    } catch (err) {
+      console.error("❌ Transcription error:", err);
+      
+      // Even on error, try to preserve live transcript
+      if (liveTranscript.trim()) {
+        console.log('💾 Error occurred but preserving live transcript:', liveTranscript);
         setTranscript(prev => {
           const updatedText = prev ? `${prev} ${liveTranscript}` : liveTranscript;
           return updatedText;
         });
         setLiveTranscript("");
-        toast.info("Using live transcription (final processing failed)");
+        toast.info(`Transcription error but live content preserved: ${err.message}`);
       } else {
-        toast.error("Transcription failed - no text received");
+        toast.error(`Transcription failed: ${err.message}`);
       }
-    } catch (err) {
-      console.error("Transcription error:", err);
-      toast.error(`Transcription failed: ${err.message}`);
     } finally {
       setIsProcessing(false);
+      // Clear processed chunks
+      audioChunksRef.current = [];
     }
   };
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop(); // This will trigger onstop event
+      console.log('🛑 Stopping recording - will process remaining chunks...');
+      mediaRecorderRef.current.stop(); // This will trigger onstop event which processes remaining chunks
     }
 
     if (onRecordingToggle) {
       onRecordingToggle(false);
     }
     
-    toast.info("Recording stopped - processing...");
+    toast.info("Recording stopped - processing remaining audio chunks...");
   };
 
   const clearTranscript = () => {

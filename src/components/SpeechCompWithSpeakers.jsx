@@ -88,6 +88,10 @@ export default function SpeechCompWithSpeakers({ onTranscriptUpdate, onSpeakersU
           clearInterval(chunkIntervalRef.current);
           chunkIntervalRef.current = null;
         }
+        
+        // Process any remaining chunks before cleanup
+        await processRemainingChunks(mimeType);
+        
         if (streamRef.current) {
           streamRef.current.getTracks().forEach(track => track.stop());
           streamRef.current = null;
@@ -184,16 +188,97 @@ export default function SpeechCompWithSpeakers({ onTranscriptUpdate, onSpeakersU
     return optimized;
   };
 
+  // Process any remaining chunks when recording stops
+  const processRemainingChunks = async (mimeType) => {
+    console.log(`🔄 Processing remaining chunks - available: ${audioChunksRef.current.length}`);
+    
+    if (audioChunksRef.current.length === 0) {
+      console.log('📝 No remaining chunks to process');
+      return;
+    }
+
+    // Prevent concurrent processing
+    if (isProcessingLiveRef.current) {
+      console.log('⏳ Already processing, skipping remaining chunks');
+      return;
+    }
+
+    try {
+      isProcessingLiveRef.current = true;
+      
+      // Process all remaining chunks as final transcription
+      const allChunksBlob = new Blob(audioChunksRef.current, { type: mimeType });
+      console.log(`🎵 Processing final chunks: ${allChunksBlob.size} bytes from ${audioChunksRef.current.length} chunks`);
+      
+      if (allChunksBlob.size < 500) {
+        console.log('⚠️ Small final chunk, but processing anyway to capture remaining speech');
+      }
+
+      const formData = new FormData();
+      formData.append("file", allChunksBlob, `final-speaker-audio-${Date.now()}.webm`);
+      
+      console.log('🚀 Sending final chunks for speaker detection and transcription...');
+      const res = await transcribeWithSpeakers(formData);
+      
+      if (res && res.success) {
+        console.log('✅ Final processing successful:', res);
+        
+        if (res.speakers && res.speakers.length > 0) {
+          const optimizedSpeakers = optimizeSpeakersOnFrontend(res.speakers);
+          console.log('👥 Final speaker segments processed:', optimizedSpeakers.length);
+          
+          // Merge with existing speakers instead of replacing
+          setSpeakers(prevSpeakers => {
+            const mergedSpeakers = [...prevSpeakers, ...optimizedSpeakers];
+            console.log('👥 Total speakers after merge:', mergedSpeakers.length);
+            return mergedSpeakers;
+          });
+          
+          if (res.text) {
+            setTranscript(prevTranscript => {
+              const updatedText = prevTranscript ? `${prevTranscript} ${res.text}` : res.text;
+              console.log('📝 Final transcript updated:', updatedText);
+              return updatedText;
+            });
+          }
+          
+          toast.success("Final speaker detection completed!");
+        } else if (res.text) {
+          console.log('📝 No speakers but got transcription from final chunks');
+          setTranscript(prevTranscript => {
+            const updatedText = prevTranscript ? `${prevTranscript} ${res.text}` : res.text;
+            return updatedText;
+          });
+          toast.success("Final transcription completed!");
+        } else {
+          console.log('ℹ️ No additional content in final chunks');
+          toast.info("No additional speech detected in remaining audio");
+        }
+      } else {
+        console.log('❌ Final processing failed:', res);
+        toast.warning("Final processing failed, but live conversation was captured");
+      }
+    } catch (err) {
+      console.error("❌ Error processing remaining chunks:", err);
+      toast.warning(`Final processing error: ${err.message}, but live conversation was captured`);
+    } finally {
+      isProcessingLiveRef.current = false;
+      // Clear processed chunks
+      audioChunksRef.current = [];
+    }
+  };
+
   const stopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
+      console.log('🛑 Stopping speaker recording - will process remaining chunks...');
+      mediaRecorderRef.current.stop(); // This will trigger onstop event which processes remaining chunks
     }
 
     if (onRecordingToggle) {
       onRecordingToggle(false);
     }
     
-    toast.info("Recording stopped - live conversation saved!");
+    toast.info("Recording stopped - processing remaining audio for speaker detection...");
   };
 
   const clearConversation = () => {
