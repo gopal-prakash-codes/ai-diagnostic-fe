@@ -52,6 +52,12 @@ function DiagnosisHistoryCard({ diagnosis }) {
     });
   };
 
+  // Helper function to capitalize first word
+  const capitalizeFirstWord = (text) => {
+    if (!text) return text;
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  };
+
   return (
     <Card className="mb-4">
       <CardHeader>
@@ -71,16 +77,16 @@ function DiagnosisHistoryCard({ diagnosis }) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Symptoms Section - Left Side */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          {/* Symptoms Section */}
           <div>
             <h4 className="text-sm font-medium text-gray-900 mb-3">Symptoms</h4>
             {diagnosis.symptoms && diagnosis.symptoms.length > 0 ? (
               <div className="space-y-2">
                 {diagnosis.symptoms.map((symptom, index) => (
-                  <div key={index} className="flex items-center">
-                    <div className="w-2 h-2 bg-red-400 rounded-full mr-3 flex-shrink-0"></div>
-                    <span className="text-sm text-gray-700">{symptom}</span>
+                  <div key={index} className="flex items-start">
+                    <div className="w-2 h-2 bg-red-400 rounded-full mr-3 flex-shrink-0 mt-1"></div>
+                    <span className="text-sm text-gray-700 leading-relaxed break-words">{capitalizeFirstWord(symptom)}</span>
                   </div>
                 ))}
               </div>
@@ -89,12 +95,58 @@ function DiagnosisHistoryCard({ diagnosis }) {
             )}
           </div>
           
-          {/* Diagnosis Section - Right Side */}
+          {/* Diagnosis Section */}
           <div>
             <h4 className="text-sm font-medium text-gray-900 mb-3">Diagnosis</h4>
-            <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-sm font-medium text-gray-900">{diagnosis.diagnosis}</p>
-            </div>
+            {diagnosis.diagnosisData && diagnosis.diagnosisData.length > 0 ? (
+              <div className="space-y-3">
+                {diagnosis.diagnosisData.map((diagnosisItem, index) => (
+                  <div key={index} className="flex flex-col xs:flex-row xs:items-center xs:justify-between space-y-1 xs:space-y-0">
+                    <div className="flex items-center flex-1 min-w-0">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full mr-3 flex-shrink-0"></div>
+                      <span className="text-sm text-gray-700 break-words">{diagnosisItem.condition}</span>
+                    </div>
+                    <span className={`ml-5 xs:ml-2 px-2 py-1 text-xs font-medium rounded-full self-start xs:self-auto ${
+                      diagnosisItem.confidence >= 80 ? 'bg-green-100 text-green-800' :
+                      diagnosisItem.confidence >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {diagnosisItem.confidence}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-sm font-medium text-gray-900">{diagnosis.diagnosis}</p>
+                {diagnosis.confidence && (
+                  <div className="mt-2">
+                    <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
+                      diagnosis.confidence >= 80 ? 'bg-green-100 text-green-800' :
+                      diagnosis.confidence >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {diagnosis.confidence}% confidence
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Treatment Section */}
+          <div>
+            <h4 className="text-sm font-medium text-gray-900 mb-3">Treatment</h4>
+            {diagnosis.treatment ? (
+              <div className="space-y-2">
+                <div className="flex items-start">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full mr-3 flex-shrink-0 mt-1"></div>
+                  <span className="text-sm text-gray-700 leading-relaxed break-words">{diagnosis.treatment}</span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">No treatment recommendations recorded</p>
+            )}
           </div>
         </div>
       </CardContent>

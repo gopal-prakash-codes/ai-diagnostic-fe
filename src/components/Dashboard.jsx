@@ -241,6 +241,15 @@ function DiagnosisResult({ diagnosis }) {
   if (!diagnosis) return null;
   const symptoms = diagnosis.Symptoms || diagnosis.symptoms || [];
   const possibleDiagnoses = diagnosis['Possible Diagnosis'] || diagnosis['Potential Diagnosis'] || diagnosis.diagnosis || [];
+  const diagnosisData = diagnosis.diagnosisData || [];
+  const treatment = diagnosis.treatment || diagnosis['Possible Treatment'] || diagnosis.possible_treatment || '';
+  const confidence = diagnosis.confidence || 0;
+
+  // Helper function to capitalize first word
+  const capitalizeFirstWord = (text) => {
+    if (!text) return text;
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  };
 
   return (
     <div className="mt-4 space-y-4">
@@ -256,9 +265,9 @@ function DiagnosisResult({ diagnosis }) {
             </div>
             <div className="space-y-3">
               {symptoms.map((symptom, index) => (
-                <div key={index} className="flex items-center">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full mr-4 flex-shrink-0"></div>
-                  <p className="text-gray-700">{symptom}</p>
+                <div key={index} className="flex items-start">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full mr-3 sm:mr-4 flex-shrink-0 mt-1.5"></div>
+                  <p className="text-gray-700 text-sm sm:text-base leading-relaxed break-words">{capitalizeFirstWord(symptom)}</p>
                 </div>
               ))}
             </div>
@@ -277,19 +286,65 @@ function DiagnosisResult({ diagnosis }) {
               <h3 className="text-lg font-semibold text-gray-900">Possible Diagnosis</h3>
             </div>
             <div className="space-y-3">
-              {Array.isArray(possibleDiagnoses) ? (
-                possibleDiagnoses.map((diagnosisItem, index) => (
-                  <div key={index} className="flex items-center">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full mr-4 flex-shrink-0"></div>
-                    <p className="text-gray-700">{diagnosisItem}</p>
+              {diagnosisData && diagnosisData.length > 0 ? (
+                diagnosisData.map((diagnosisItem, index) => (
+                  <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                    <div className="flex items-center flex-1 min-w-0">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full mr-3 sm:mr-4 flex-shrink-0"></div>
+                      <p className="text-gray-700 text-sm sm:text-base break-words">{diagnosisItem.condition}</p>
+                    </div>
+                    <span className={`ml-5 sm:ml-3 px-2 py-1 text-xs font-medium rounded-full self-start sm:self-auto ${
+                      diagnosisItem.confidence >= 80 ? 'bg-green-100 text-green-800' :
+                      diagnosisItem.confidence >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {diagnosisItem.confidence}%
+                    </span>
                   </div>
                 ))
-              ) : (
-                <div className="flex items-center">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full mr-4 flex-shrink-0"></div>
-                  <p className="text-gray-700">{possibleDiagnoses}</p>
+              ) : Array.isArray(possibleDiagnoses) ? (
+                possibleDiagnoses.map((diagnosisItem, index) => (
+                  <div key={index} className="flex items-start">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full mr-3 sm:mr-4 flex-shrink-0 mt-1.5"></div>
+                    <p className="text-gray-700 text-sm sm:text-base leading-relaxed break-words">{diagnosisItem}</p>
+                  </div>
+                ))
+              ) : possibleDiagnoses ? (
+                <div className="flex items-start">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full mr-3 sm:mr-4 flex-shrink-0 mt-1.5"></div>
+                  <p className="text-gray-700 text-sm sm:text-base leading-relaxed break-words">{possibleDiagnoses}</p>
                 </div>
-              )}
+              ) : null}
+            </div>
+          </div>
+        </Card>
+      )}
+      
+      {/* Treatment Section */}
+      {treatment && (
+        <Card className="border-gray-200 bg-white">
+          <div className="p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center mb-4 space-y-2 sm:space-y-0">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 text-gray-700 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                </svg>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Treatment plan</h3>
+              </div>
+              {confidence > 0 && (
+                <span className={`ml-8 sm:ml-auto px-2 py-1 text-xs font-medium rounded-full ${
+                  confidence >= 80 ? 'bg-green-100 text-green-800' :
+                  confidence >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {confidence}% 
+                </span>              )}
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-start">
+                <div className="w-2 h-2 bg-gray-400 rounded-full mr-3 sm:mr-4 flex-shrink-0 mt-1.5"></div>
+                <p className="text-gray-700 text-sm sm:text-base leading-relaxed">{treatment}</p>
+              </div>
             </div>
           </div>
         </Card>
