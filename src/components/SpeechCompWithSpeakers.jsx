@@ -56,9 +56,21 @@ export default function SpeechCompWithSpeakers({ onTranscriptUpdate, onSpeakersU
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 44100
+          // Optimized specifically for speaker detection
+          echoCancellation: false,    // CRITICAL: Preserve unique speaker voice characteristics
+          noiseSuppression: false,    // CRITICAL: Keep speaker-specific audio features
+          autoGainControl: false,     // CRITICAL: Prevent level changes that mask speaker differences
+          sampleRate: 44100,         // Standard high-quality rate (48000 can cause issues)
+          channelCount: 1,           // Mono for consistent speaker detection (stereo can confuse AI)
+          latency: 0.01,             // Low latency for real-time processing
+          // Advanced constraints for better speaker detection
+          advanced: [{
+            googEchoCancellation: {exact: false},
+            googAutoGainControl: {exact: false},
+            googNoiseSuppression: {exact: false},
+            googHighpassFilter: {exact: false},
+            googTypingNoiseDetection: {exact: false}
+          }]
         }
       });
       
@@ -67,11 +79,19 @@ export default function SpeechCompWithSpeakers({ onTranscriptUpdate, onSpeakersU
       recordingStartTime.current = Date.now();
       setSpeakers([]);
       setTranscript("");
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
-        ? 'audio/webm;codecs=opus' 
-        : 'audio/webm';
+      // Choose best audio format for speaker detection
+      let mimeType;
+      if (MediaRecorder.isTypeSupported('audio/wav')) {
+        mimeType = 'audio/wav'; // Best for speaker detection
+      } else if (MediaRecorder.isTypeSupported('audio/webm;codecs=pcm')) {
+        mimeType = 'audio/webm;codecs=pcm'; // Uncompressed, good for speaker detection
+      } else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        mimeType = 'audio/webm;codecs=opus'; // Compressed but decent
+      } else {
+        mimeType = 'audio/webm'; // Fallback
+      }
       
-      console.log('Using MIME type for Assembly AI:', mimeType);
+      console.log('🎤 Optimized audio format for speaker detection:', mimeType);
       
       const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
@@ -103,7 +123,7 @@ export default function SpeechCompWithSpeakers({ onTranscriptUpdate, onSpeakersU
         toast.error("Recording error occurred");
         stopRecording();
       };
-      mediaRecorder.start(5000); 
+      mediaRecorder.start(10000); // Increased to 10 seconds for better speaker detection 
 
       if (onRecordingToggle) {
         onRecordingToggle(true);
@@ -129,7 +149,7 @@ export default function SpeechCompWithSpeakers({ onTranscriptUpdate, onSpeakersU
       const allChunksBlob = new Blob(audioChunksRef.current, { type: mimeType });
       
       console.log(`Total accumulated audio: ${allChunksBlob.size} bytes`);
-      if (audioChunksRef.current.length >= 2 && allChunksBlob.size > 10000) {
+      if (audioChunksRef.current.length >= 1 && allChunksBlob.size > 50000) { // Higher threshold for better speaker detection quality
         const formData = new FormData();
         formData.append("file", allChunksBlob, `live-audio-${Date.now()}.webm`);
         
@@ -170,13 +190,13 @@ export default function SpeechCompWithSpeakers({ onTranscriptUpdate, onSpeakersU
       const optimizedSpeaker = {
         ...speaker,
         text: cleanedText,
-        speaker: speaker.speaker === 'A' ? 'A' : 'B' 
+        speaker: speaker.speaker // Preserve original speaker labels instead of forcing A/B 
       };
 
       const lastSpeaker = optimized[optimized.length - 1];
       if (lastSpeaker && 
           lastSpeaker.speaker === optimizedSpeaker.speaker && 
-          (optimizedSpeaker.start - lastSpeaker.end) < 3000) {
+          (optimizedSpeaker.start - lastSpeaker.end) < 2000) { // Reduced merge threshold to 2 seconds
         lastSpeaker.text += ' ' + optimizedSpeaker.text;
         lastSpeaker.end = optimizedSpeaker.end;
         lastSpeaker.confidence = Math.max(lastSpeaker.confidence, optimizedSpeaker.confidence);

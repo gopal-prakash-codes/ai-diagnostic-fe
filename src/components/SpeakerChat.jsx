@@ -14,6 +14,10 @@ const SpeakerChat = ({ speakers = [], isRecording, className = "" }) => {
         return 'Doctor';
       case 'B':
         return 'Patient';
+      case 'C':
+        return 'Speaker C';
+      case 'D':
+        return 'Speaker D';
       default:
         return `Speaker ${speakerLabel}`;
     }
@@ -34,6 +38,20 @@ const SpeakerChat = ({ speakers = [], isRecording, className = "" }) => {
           border: 'border-green-200',
           text: 'text-green-800',
           name: 'text-green-600'
+        };
+      case 'C':
+        return {
+          bg: 'bg-purple-100',
+          border: 'border-purple-200',
+          text: 'text-purple-800',
+          name: 'text-purple-600'
+        };
+      case 'D':
+        return {
+          bg: 'bg-orange-100',
+          border: 'border-orange-200',
+          text: 'text-orange-800',
+          name: 'text-orange-600'
         };
       default:
         return {
