@@ -13,6 +13,8 @@ export default function SpeechCompWithSpeakers({ onTranscriptUpdate, onSpeakersU
   const recordingStartTime = useRef(null);
   const chunkIntervalRef = useRef(null);
   const isProcessingLiveRef = useRef(false);
+  const chunkQueueRef = useRef([]);
+  const isProcessingQueueRef = useRef(false);
   useEffect(() => {
     if (onTranscriptUpdate) {
       onTranscriptUpdate(transcript);
@@ -30,6 +32,7 @@ export default function SpeechCompWithSpeakers({ onTranscriptUpdate, onSpeakersU
       setTranscript("");
       setSpeakers([]);
       audioChunksRef.current = [];
+      chunkQueueRef.current = [];
     }
   }, [selectedPatient]);
   useEffect(() => {
@@ -37,6 +40,7 @@ export default function SpeechCompWithSpeakers({ onTranscriptUpdate, onSpeakersU
       setTranscript("");
       setSpeakers([]);
       audioChunksRef.current = [];
+      chunkQueueRef.current = [];
       // Stop recording if active
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
         mediaRecorderRef.current.stop();
@@ -76,6 +80,7 @@ export default function SpeechCompWithSpeakers({ onTranscriptUpdate, onSpeakersU
       
       streamRef.current = stream;
       audioChunksRef.current = [];
+      chunkQueueRef.current = [];
       recordingStartTime.current = Date.now();
       setSpeakers([]);
       setTranscript("");
@@ -136,9 +141,55 @@ export default function SpeechCompWithSpeakers({ onTranscriptUpdate, onSpeakersU
       toast.error("Failed to access microphone. Please check permissions.");
     }
   };
+
+  // Process chunks from the queue sequentially
+  const processChunkQueue = async (mimeType) => {
+    if (isProcessingQueueRef.current || chunkQueueRef.current.length === 0) {
+      return;
+    }
+
+    isProcessingQueueRef.current = true;
+
+    while (chunkQueueRef.current.length > 0) {
+      const queuedChunk = chunkQueueRef.current.shift();
+      
+      try {
+        console.log(`Processing queued chunk: ${queuedChunk.size} bytes, remaining in queue: ${chunkQueueRef.current.length}`);
+        
+        const allChunksBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        
+        console.log(`Total accumulated audio: ${allChunksBlob.size} bytes`);
+        if (audioChunksRef.current.length >= 1 && allChunksBlob.size > 50000) {
+          const formData = new FormData();
+          formData.append("file", allChunksBlob, `queued-audio-${Date.now()}.webm`);
+          
+          const res = await transcribeWithSpeakers(formData); 
+          
+          if (res && res.success) {
+            if (res.speakers && res.speakers.length > 0) {
+              const optimizedSpeakers = optimizeSpeakersOnFrontend(res.speakers);
+              setSpeakers(optimizedSpeakers);
+              setTranscript(res.text || "");
+            } else if (res.text) {
+              setTranscript(res.text);
+            }
+          } else {
+            console.log('No response from hybrid transcription for queued chunk');
+          }
+        } else {
+          console.log(`⏳ Queued chunk waiting for more audio data... (${audioChunksRef.current.length} chunks, ${allChunksBlob.size} bytes)`);
+        }
+      } catch (err) {
+        console.error("Error processing queued chunk:", err);
+      }
+    }
+
+    isProcessingQueueRef.current = false;
+  };
   const processLiveChunk = async (audioData, mimeType) => {
     if (isProcessingLiveRef.current) {
-      console.log('Skipping chunk - already processing live speaker detection');
+      console.log(`Queueing chunk - already processing live speaker detection. Queue size: ${chunkQueueRef.current.length + 1}`);
+      chunkQueueRef.current.push(audioData);
       return;
     }
 
@@ -173,6 +224,12 @@ export default function SpeechCompWithSpeakers({ onTranscriptUpdate, onSpeakersU
       console.error(" Live speaker detection error:", err);
     } finally {
       isProcessingLiveRef.current = false;
+      
+      // Process any queued chunks after finishing current chunk
+      if (chunkQueueRef.current.length > 0) {
+        console.log(`🔄 Processing ${chunkQueueRef.current.length} queued chunks`);
+        processChunkQueue(mimeType);
+      }
     }
   };
   const cleanText = (text) => {
@@ -210,16 +267,22 @@ export default function SpeechCompWithSpeakers({ onTranscriptUpdate, onSpeakersU
 
   // Process any remaining chunks when recording stops
   const processRemainingChunks = async (mimeType) => {
-    console.log(`🔄 Processing remaining chunks - available: ${audioChunksRef.current.length}`);
+    console.log(`🔄 Processing remaining chunks - available: ${audioChunksRef.current.length}, queued: ${chunkQueueRef.current.length}`);
+    
+    // Wait for any ongoing live processing to complete
+    while (isProcessingLiveRef.current || isProcessingQueueRef.current) {
+      console.log('⏳ Waiting for ongoing processing to complete...');
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    // Process any remaining queued chunks first
+    if (chunkQueueRef.current.length > 0) {
+      console.log(`🔄 Processing ${chunkQueueRef.current.length} final queued chunks`);
+      await processChunkQueue(mimeType);
+    }
     
     if (audioChunksRef.current.length === 0) {
       console.log('📝 No remaining chunks to process');
-      return;
-    }
-
-    // Prevent concurrent processing
-    if (isProcessingLiveRef.current) {
-      console.log('⏳ Already processing, skipping remaining chunks');
       return;
     }
 
@@ -305,6 +368,7 @@ export default function SpeechCompWithSpeakers({ onTranscriptUpdate, onSpeakersU
     setTranscript("");
     setSpeakers([]);
     audioChunksRef.current = [];
+    chunkQueueRef.current = [];
     if (onTranscriptUpdate) {
       onTranscriptUpdate("");
     }
