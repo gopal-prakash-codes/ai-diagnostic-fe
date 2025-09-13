@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { createPatient, getPatients, analyzeDiagnosis } from '../api/api';
 import { useAuth } from '../context/AuthContext';
-import VoiceRecorder from './VoiceRecorder';
 import { Button, Card, CardHeader, CardContent, Input, Select, Modal, Badge } from './UI';
 import SpeechCompWithSpeakers from './SpeechCompWithSpeakers';
 
@@ -364,7 +363,8 @@ function Dashboard() {
   const handlePatientSelect = (patient) => {
     if (patient && (patient.id || patient._id)) {
       setSelectedPatient(patient);
-      setConversation('');
+      // MODIFIED: Don't clear conversation when selecting patient - allow continuation
+      // setConversation(''); // REMOVED
       setDiagnosis(null);
       setIsRecording(false);
     }
@@ -373,6 +373,7 @@ function Dashboard() {
   const [isRecording, setIsRecording] = useState(false);
   const [conversation, setConversation] = useState('');
   const [speakers, setSpeakers] = useState([]);
+  const [completeTranscript, setCompleteTranscript] = useState('');
   const [diagnosis, setDiagnosis] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -383,6 +384,17 @@ function Dashboard() {
     age: '',
     gender: ''
   });
+
+  // Ensure conversation is updated when speakers change
+  useEffect(() => {
+    if (speakers && speakers.length > 0) {
+      const formattedConversation = speakers
+        .map(segment => `${segment.speaker === 'A' ? 'Doctor' : 'Patient'}: ${segment.text}`)
+        .join('\n');
+      setConversation(formattedConversation);
+    }
+  }, [speakers]);
+
 
   useEffect(() => {
     if (!hasLoadedPatients.current) {
@@ -463,7 +475,12 @@ function Dashboard() {
   };
 
   const handleTranscriptUpdate = (transcript) => {
-    setConversation(transcript);
+    // Store the complete transcript
+    setCompleteTranscript(transcript);
+    // Only update conversation if we don't have speakers (fallback)
+    if (speakers.length === 0) {
+      setConversation(transcript);
+    }
   };
 
   const handleSpeakersUpdate = (speakerData) => {
@@ -483,6 +500,7 @@ function Dashboard() {
   const handleClearConversation = () => {
     setConversation('');
     setSpeakers([]);
+    setCompleteTranscript('');
     setDiagnosis(null);
     setIsRecording(false);
     // Trigger clear in the SpeechCompWithSpeakers component
@@ -504,7 +522,16 @@ function Dashboard() {
         setIsRecording(false);
       }
       
-      const response = await analyzeDiagnosis(patientId, conversation);
+      // Use the complete transcript if it's longer than the speaker-formatted conversation
+      let finalConversation = conversation;
+      
+      // Check if we have a complete transcript that's longer than the speaker segments
+      if (completeTranscript && completeTranscript.length > conversation.length) {
+        finalConversation = completeTranscript;
+      }
+      
+      
+      const response = await analyzeDiagnosis(patientId, finalConversation);
       
       if (response.success && response.data && response.data.analysis) {
         setDiagnosis(response.data.analysis);
@@ -612,12 +639,6 @@ function Dashboard() {
                           <h3 className="text-xl font-semibold text-gray-900">{selectedPatient.name}</h3>
                           <p className="text-sm text-gray-500">{selectedPatient.gender}, {selectedPatient.age} years old</p>
                         </div>
-                        {/* <VoiceRecorder
-                          isRecording={isRecording}
-                          onRecordingToggle={handleRecordingToggle}
-                          onTranscriptUpdate={handleTranscriptUpdate}
-                          conversationText={conversation}
-                        /> */}
                       </div>
                       
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">

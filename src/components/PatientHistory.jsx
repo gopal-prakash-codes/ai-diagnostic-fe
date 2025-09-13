@@ -220,7 +220,6 @@ function PatientHistory() {
           setHistoryData(historyResponse.data);
         }
       } catch (err) {
-        console.error('Error loading data:', err);
         setError(err.message);
       } finally {
         setLoading(false);
