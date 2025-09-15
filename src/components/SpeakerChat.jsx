@@ -2,9 +2,11 @@ import React, { useEffect, useRef } from 'react';
 
 const SpeakerChat = ({ speakers = [], isRecording, className = "" }) => {
   const chatEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
+  
   useEffect(() => {
-    if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (chatEndRef.current && chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [speakers]);
 
@@ -128,7 +130,7 @@ const SpeakerChat = ({ speakers = [], isRecording, className = "" }) => {
         </h3>
       </div>
 
-      <div className="p-4 max-h-80 overflow-y-auto space-y-4">
+      <div ref={chatContainerRef} className="p-4 max-h-80 overflow-y-auto space-y-4">
         {speakers.map((segment, index) => {
           const colors = getSpeakerColor(segment.speaker);
           const isDoctor = segment.speaker === 'A';
