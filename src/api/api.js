@@ -199,7 +199,7 @@ export const transcribeWithSpeakers = async (formData) => {
   return data;
 }
 
-export const analyzeDiagnosis = async (patientId, conversationText) => {
+export const analyzeDiagnosis = async (patientId, conversationText, updateExisting = false) => {
   const token = getAuthToken();
   if (!token) {
     throw new Error('Authentication required. Please login again.');
@@ -213,7 +213,8 @@ export const analyzeDiagnosis = async (patientId, conversationText) => {
     },
     body: JSON.stringify({
       patientId,
-      conversationText
+      conversationText,
+      updateExisting
     })
   });
 

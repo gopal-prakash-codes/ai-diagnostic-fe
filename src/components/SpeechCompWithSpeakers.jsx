@@ -3,10 +3,11 @@ import { transcribeWithSpeakers } from "../api/api";
 import { toast } from 'react-toastify';
 import SpeakerChat from './SpeakerChat';
 
-export default function SpeechCompWithSpeakers({ onTranscriptUpdate, onSpeakersUpdate, selectedPatient, isRecording, onRecordingToggle, clearTrigger }) {
+export default function SpeechCompWithSpeakers({ onTranscriptUpdate, onSpeakersUpdate, selectedPatient, isRecording, onRecordingToggle, clearTrigger, onTranscriptionStatusChange }) {
   const [transcript, setTranscript] = useState("");
   const [speakers, setSpeakers] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isTranscribingChunks, setIsTranscribingChunks] = useState(false);
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -30,11 +31,24 @@ export default function SpeechCompWithSpeakers({ onTranscriptUpdate, onSpeakersU
       onSpeakersUpdate(speakers);
     }
   }, [speakers, onSpeakersUpdate]);
+  useEffect(() => {
+    const checkTranscriptionStatus = () => {
+      const isTranscribing = isProcessingLiveRef.current || isProcessingQueueRef.current || chunkQueueRef.current.length > 0;
+      setIsTranscribingChunks(isTranscribing);
+      if (onTranscriptionStatusChange) {
+        onTranscriptionStatusChange(isTranscribing);
+      }
+    };
+
+    const interval = setInterval(checkTranscriptionStatus, 200); 
+    return () => clearInterval(interval);
+  }, [onTranscriptionStatusChange]);
 
   useEffect(() => {
     if (clearTrigger) {
       setTranscript("");
       setSpeakers([]);
+      setIsTranscribingChunks(false);
       audioChunksRef.current = [];
       chunkQueueRef.current = [];
       newSessionAudioChunksRef.current = [];
@@ -453,6 +467,12 @@ export default function SpeechCompWithSpeakers({ onTranscriptUpdate, onSpeakersU
                 <div className="flex items-center text-green-600">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2"></div>
                   <span className="text-sm font-medium">🔴 Live: {getRecordingDuration()}</span>
+                </div>
+              )}
+              {isTranscribingChunks && (
+                <div className="flex items-center text-blue-600">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse mr-2"></div>
+                  <span className="text-sm font-medium">📝 Transcribing...</span>
                 </div>
               )}
             </div>

@@ -378,6 +378,7 @@ function Dashboard() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [clearTrigger, setClearTrigger] = useState(0);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   
   const [newPatient, setNewPatient] = useState({
     name: '',
@@ -404,7 +405,7 @@ function Dashboard() {
   }, []);
 
   const loadPatients = useCallback(async () => {
-    if (isLoadingPatients.current) return; // Prevent multiple concurrent calls
+    if (isLoadingPatients.current) return; 
     
     try {
       isLoadingPatients.current = true;
@@ -412,7 +413,6 @@ function Dashboard() {
       
       const response = await getPatients();
       if (response.success && response.data) {
-        // Handle both response.data.patients and response.data directly
         const patientsData = response.data.patients || response.data;
         const validPatients = Array.isArray(patientsData) ? patientsData : [];
         setPatients(validPatients);
@@ -469,15 +469,10 @@ function Dashboard() {
 
   const handleRecordingToggle = () => {
     setIsRecording(!isRecording);
-    if (!isRecording) {
-      setDiagnosis(null);
-    }
   };
 
   const handleTranscriptUpdate = (transcript) => {
-    // Store the complete transcript
     setCompleteTranscript(transcript);
-    // Only update conversation if we don't have speakers (fallback)
     if (speakers.length === 0) {
       setConversation(transcript);
     }
@@ -530,8 +525,8 @@ function Dashboard() {
         finalConversation = completeTranscript;
       }
       
-      
-      const response = await analyzeDiagnosis(patientId, finalConversation);
+      const isExtension = diagnosis !== null;
+      const response = await analyzeDiagnosis(patientId, finalConversation, isExtension);
       
       if (response.success && response.data && response.data.analysis) {
         setDiagnosis(response.data.analysis);
@@ -680,6 +675,7 @@ function Dashboard() {
                   isRecording={isRecording}
                   onRecordingToggle={setIsRecording}
                   clearTrigger={clearTrigger}
+                  onTranscriptionStatusChange={setIsTranscribing}
                 />
               </>
             ) : (
