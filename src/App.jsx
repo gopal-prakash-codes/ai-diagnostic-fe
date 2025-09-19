@@ -8,6 +8,13 @@ import Login from './components/Login'
 import Signup from './components/Signup'
 import PatientHistory from './components/PatientHistory'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import AppointmentManagement from "./components/AppointmentManagement"
+import PatientRecords from "./components/PatientRecords"
+import SidebarLayout from './components/SideBar'
+// import RadiologyReports from "./components/RadiologyReports"
+import RadiologyDashboard from './components/RadiologyReportDetail'
+ 
+
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -77,6 +84,14 @@ const AppContent = () => {
           <PatientHistory />
         </ProtectedRoute>
       } />
+
+<Route path="/appointments" element={<AppointmentManagement />} />
+<Route path="/patient-record" element={<PatientRecords/>} />
+
+          {/* <Route path="/radiology" element={<RadiologyReports />} /> */}
+          <Route path="/radiology" element={<RadiologyDashboard />} />
+
+
       
       {/* Default redirect */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

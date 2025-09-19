@@ -3,8 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { loginUser } from '../api/api';
 import { useAuth } from '../context/AuthContext';
-
-// Icons
+import { MdOutlineEmail } from 'react-icons/md';
+import { RiLockPasswordLine } from 'react-icons/ri';
+import doctorImg from "../assets/nurse.png"
+import logo from "../assets/logo.png"
 const Eye = ({ className = "" }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -18,12 +20,6 @@ const EyeOff = ({ className = "" }) => (
   </svg>
 );
 
-const Stethoscope = ({ className = "" }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26 2.438.775 2.413 1.073" />
-  </svg>
-);
-
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -33,10 +29,10 @@ const Login = () => {
   useEffect(() => {
     if (location.state?.signupSuccess) {
       setSignupSuccess(true);
-      // Clear the state to prevent showing the message on refresh
       navigate('/login', { replace: true });
     }
   }, [location.state, navigate]);
+
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -103,7 +99,7 @@ const Login = () => {
     });
     const emailError = validateEmail(formData.email);
     const passwordError = validatePassword(formData.password);
-    
+
     const errors = {
       email: emailError,
       password: passwordError
@@ -131,32 +127,36 @@ const Login = () => {
     }
   };
 
-  const isFormValid = formData.email && formData.password && 
-                     !fieldErrors.email && !fieldErrors.password;
+  const isFormValid = formData.email && formData.password &&
+    !fieldErrors.email && !fieldErrors.password;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="max-w-sm w-full space-y-4">
-        {/* Header */}
-        <div className="text-center">
-          <div className="flex justify-center">
-            <div className="p-3 bg-white rounded-full shadow-md border border-gray-200">
-              <Stethoscope className="w-7 h-7 text-gray-700" />
-            </div>
+    <div className="flex ">
+      {/* Left half: Image container */}
+      <div className='p-6 w-1/2'>
+        {/* <img
+          src={doctorImg}
+          alt="A female doctor smiling"
+          className='w-full h-full object-fill '
+        /> */}
+        <img
+          src={doctorImg}
+          alt="A female doctor smiling"
+          className=' '
+        />
+      </div>
+
+      {/* Right half: Login form container */}
+      <div className="flex items-center justify-center w-full p-20 lg:w-1/2">
+        <div className="w-full  p-8 bg-white rounded-lg">
+          {/* Logo and title */}
+          <div className="flex flex-col items-center mb-6 text-center">
+              <img src={logo} alt="Arogya AI Logo" />
+            <h1 className="text-2xl mb-3 font-bold text-[#000000]">Arogya AI</h1>
+            <p className="mb-3 text-xl text-[#000000] font-semibold">LOGIN WITH US</p>
           </div>
-          <h1 className="mt-4 text-2xl font-bold text-gray-900">
-            AI Doctor
-          </h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Sign in to your account
-          </p>
-        </div>
 
-        {/* Login Form */}
-        <div className="bg-white py-6 px-6 shadow-xl rounded-xl border border-gray-100">
           <form className="space-y-4" onSubmit={handleSubmit}>
-
-            
             {error && (
               <div className="bg-red-50 border-l-3 border-red-400 text-red-700 px-4 py-3 rounded-r-lg text-xs font-medium">
                 <div className="flex items-center">
@@ -170,10 +170,8 @@ const Login = () => {
 
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-800 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
+              <label htmlFor="email" className="block text-md font-medium text-[#000000] sr-only">Email Address</label>
+              <div className="relative border border-[#AFAFAF] rounded-lg">
                 <input
                   id="email"
                   name="email"
@@ -183,16 +181,12 @@ const Login = () => {
                   value={formData.email}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  className={`w-full px-3 py-3 pr-10 border rounded-lg shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-300 text-gray-900 ${
-                    touched.email && fieldErrors.email
-                      ? 'border-red-300 focus:ring-red-200 bg-red-50'
-                      : touched.email && !fieldErrors.email && formData.email
-                      ? 'border-green-400 focus:ring-green-200 bg-green-50'
-                      : 'border-gray-300 focus:ring-gray-200 hover:border-gray-400'
-                  }`}
-                  placeholder="your@email.com"
+                  className={"w-full px-3 py-3 pl-13 pr-10 border rounded-lg shadow-sm placeholder-[#000000] focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-300 text-gray-900"}
+                  placeholder="Johndoe@gmail.com"
                 />
-                {/* Validation Icon */}
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none ">
+                  <MdOutlineEmail className="text-2xl text-[#000000]" />
+                </div>
                 {touched.email && (
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
                     {fieldErrors.email ? (
@@ -214,10 +208,8 @@ const Login = () => {
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-800 mb-2">
-                Password
-              </label>
-              <div className="relative">
+              <label htmlFor="password" className="block text-sm font-medium text-[#000000] sr-only">Password</label>
+              <div className="relative border border-[#AFAFAF] rounded-lg">
                 <input
                   id="password"
                   name="password"
@@ -227,30 +219,13 @@ const Login = () => {
                   value={formData.password}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  className={`w-full px-3 py-3 pr-20 border rounded-lg shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-300 text-gray-900 ${
-                    touched.password && fieldErrors.password
-                      ? 'border-red-300 focus:ring-red-200 bg-red-50'
-                      : touched.password && !fieldErrors.password && formData.password
-                      ? 'border-green-400 focus:ring-green-200 bg-green-50'
-                      : 'border-gray-300 focus:ring-gray-200 hover:border-gray-400'
-                  }`}
-                  placeholder="Enter your password"
+                  className={"w-full px-3 py-3 pl-13 pr-20 border rounded-lg shadow-sm placeholder-[#000000] text-gray-900"} 
+                  placeholder="*** *** ***"
                 />
-                {/* Validation Icon */}
-                {touched.password && (
-                  <div className="absolute inset-y-0 right-10 pr-2 flex items-center">
-                    {fieldErrors.password ? (
-                      <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    ) : formData.password ? (
-                      <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : null}
-                  </div>
-                )}
-                {/* Show/Hide Password Button */}
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <RiLockPasswordLine className="text-2xl text-[#000000]" />
+                </div>
+                
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -267,6 +242,9 @@ const Login = () => {
                 <p className="mt-1 text-sm text-red-600">{fieldErrors.password}</p>
               )}
             </div>
+            <div className="mt-2 text-sm text-right">
+              <a href="#" className=" text-[#000000] underline">Forgot Password</a>
+            </div>
 
             {/* Submit Button */}
             <div className="pt-2">
@@ -276,8 +254,8 @@ const Login = () => {
                 className={`
                   w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-semibold text-white transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2
                   ${isFormValid && !isLoading
-                    ? 'bg-gray-800 hover:bg-gray-900 focus:ring-gray-500'
-                    : 'bg-gray-400 cursor-not-allowed'
+                    ? 'bg-[#2EB4B4]'
+                    : 'bg-[#2EB4B4] cursor-not-allowed'
                   }
                 `}
               >
@@ -290,34 +268,16 @@ const Login = () => {
                     Signing in...
                   </>
                 ) : (
-                  'Sign In'
+                  'LOGIN'
                 )}
               </button>
             </div>
           </form>
 
           {/* Switch to Signup */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-700">
-              Don't have an account?{' '}
-              <button
-                onClick={() => navigate('/signup')}
-                className="font-semibold text-gray-900 hover:text-gray-700 transition-colors underline decoration-2 underline-offset-2"
-              >
-                Sign up
-              </button>
-            </p>
+          <div className="mt-4 text-md text-center">
+            <p className="text-[#000000]">Don't have an account? <a href="/signup" className="font-semibold text-red-500 hover:text-red-600">Signup</a></p>
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center">
-          <p className="text-xs text-gray-600 font-medium">
-            AI-powered medical diagnosis system
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            Secure • Professional • Intelligent
-          </p>
         </div>
       </div>
     </div>
