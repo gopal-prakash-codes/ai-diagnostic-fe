@@ -78,17 +78,7 @@ const radiologyReports = [
         }
     },
     {
-        id: 5, name: 'John Smith', status: 'In Progress', date: '2025-11-09', reportType: 'Complete Blood Count', avatar: 'https://randomuser.me/api/portraits/men/1.jpg', alert: false, reportDetails: {
-            panelName: "Ultrasound", patientAgeSex: "45, M", reportId: "Lab-005", doctorName: "Dr. Mike Brown", clinicName: "Wellness Family Practice", clinicAddress: "70 Washington Square South, New York, NY 10012, United States", clinicalFindings: "Ultrasound scan in progress...", diagnosis: "Pending", urgencyLevel: "Routine", recommendedActions: "Awaiting results."
-        }
-    },
-    {
-        id: 6, name: 'Sarah Davis', status: 'Completed', date: '2025-11-09', reportType: 'Complete Blood Count', avatar: 'https://randomuser.me/api/portraits/women/4.jpg', alert: true, reportDetails: {
-            panelName: "CT Scan", patientAgeSex: "32, F", reportId: "Lab-006", doctorName: "Dr. Mike Brown", clinicName: "Wellness Family Practice", clinicAddress: "70 Washington Square South, New York, NY 10012, United States", clinicalFindings: "No abnormalities detected.", diagnosis: "Normal CT Scan", urgencyLevel: "Routine", recommendedActions: "Continue with regular check-ups."
-        }
-    },
-    {
-        id: 7, name: 'Sarah Davis', status: 'Completed', date: '2025-11-09', reportType: 'Complete Blood Count', avatar: 'https://randomuser.me/api/portraits/women/4.jpg', alert: true, reportDetails: {
+        id: 5, name: 'Sarah Davis', status: 'Completed', date: '2025-11-09', reportType: 'Complete Blood Count', avatar: 'https://randomuser.me/api/portraits/women/4.jpg', alert: true, reportDetails: {
             panelName: "X-Ray", patientAgeSex: "32, F", reportId: "Lab-007", doctorName: "Dr. Mike Brown", clinicName: "Wellness Family Practice", clinicAddress: "70 Washington Square South, New York, NY 10012, United States", clinicalFindings: "Small fracture in the left radius.", diagnosis: "Left forearm fracture.", urgencyLevel: "Priority", recommendedActions: "Apply cast and schedule a follow-up appointment."
         }
     },

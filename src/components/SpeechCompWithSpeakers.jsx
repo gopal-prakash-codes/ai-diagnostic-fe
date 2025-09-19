@@ -63,6 +63,17 @@ export default function SpeechCompWithSpeakers({ onTranscriptUpdate, onSpeakersU
     }
   }, [clearTrigger, onRecordingToggle]);
 
+  // Add useEffect to respond to isRecording prop changes
+  useEffect(() => {
+    if (isRecording && (!mediaRecorderRef.current || mediaRecorderRef.current.state !== 'recording')) {
+      // Start recording when isRecording becomes true
+      startRecording();
+    } else if (!isRecording && mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      // Stop recording when isRecording becomes false
+      stopRecording();
+    }
+  }, [isRecording]);
+
   const startRecording = async () => {
     if (!selectedPatient) {
       toast.error("Please select a patient first");

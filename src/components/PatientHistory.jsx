@@ -3,6 +3,8 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { getPatientHistory, getPatients } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import { Button, Card, CardHeader, CardContent } from './UI';
+import SidebarLayout from './SideBar';
+import Navbar from './NavBar';
 
 const ArrowLeft = ({ className = "" }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -25,6 +27,67 @@ const LogOut = ({ className = "" }) => (
 const User = ({ className = "" }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+  </svg>
+);
+
+const Heart = ({ className = "" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+  </svg>
+);
+
+const Activity = ({ className = "" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+  </svg>
+);
+
+const FileText = ({ className = "" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 2H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+  </svg>
+);
+
+const Pill = ({ className = "" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26 2.438.775 2.413 1.073" />
+  </svg>
+);
+
+const AlertTriangle = ({ className = "" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+  </svg>
+);
+
+const Clock = ({ className = "" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const Calendar = ({ className = "" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+  </svg>
+);
+
+const Phone = ({ className = "" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+  </svg>
+);
+
+const Mail = ({ className = "" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 7.89a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+  </svg>
+);
+
+const ViewDetails = ({ className = "" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
   </svg>
 );
 
@@ -136,7 +199,7 @@ function DiagnosisHistoryCard({ diagnosis }) {
 
           {/* Treatment Section */}
           <div>
-            <h4 className="text-sm font-medium text-gray-900 mb-3">Treatment</h4>
+            <h4 className="text-sm font-medium text-gray-900 mb-3">Next Steps</h4>
             {diagnosis.treatment ? (
               <div className="space-y-2">
                 <div className="flex items-start">
@@ -154,11 +217,321 @@ function DiagnosisHistoryCard({ diagnosis }) {
   );
 }
 
+// Component for empty visit history cards - shows empty fields instead of message
+function EmptyVisitHistoryCards({ selectedDate, onClearFilter }) {
+  return (
+    <div className="space-y-4">
+      {/* Main Visit History Card - Empty State */}
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+        {/* Teal Header */}
+        <div className="bg-teal-500 px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Calendar className="w-5 h-5 text-white" />
+            <span className="text-white font-semibold text-base">Visit History</span>
+          </div>
+          <div className="text-white text-sm">
+            No visits recorded
+          </div>
+        </div>
+
+        {/* White Content Area */}
+        <div className="p-6">
+          {/* Four Section Grid Layout - Empty State */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Diagnosis Section */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center mb-3">
+                <div className="w-6 h-6 bg-gray-800 rounded-sm flex items-center justify-center mr-3">
+                  <FileText className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-base font-semibold text-gray-900">Diagnosis</h4>
+              </div>
+              <hr className="border-gray-200 mb-4" />
+              <div className="space-y-2">
+                <span className="text-sm text-gray-500">No diagnosis available</span>
+              </div>
+            </div>
+
+            {/* Symptoms Section */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center mb-3">
+                <div className="w-6 h-6 bg-gray-800 rounded-sm flex items-center justify-center mr-3">
+                  <Activity className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-base font-semibold text-gray-900">Symptoms</h4>
+              </div>
+              <hr className="border-gray-200 mb-4" />
+              <div className="space-y-2">
+                <span className="text-sm text-gray-500">No symptoms recorded</span>
+              </div>
+            </div>
+
+            {/* Treatment Section */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center mb-3">
+                <div className="w-6 h-6 bg-gray-800 rounded-sm flex items-center justify-center mr-3">
+                  <Heart className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-base font-semibold text-gray-900">Treatment</h4>
+              </div>
+              <hr className="border-gray-200 mb-4" />
+              <div className="space-y-2">
+                <span className="text-sm text-gray-500">No treatment plan available</span>
+              </div>
+            </div>
+
+            {/* Allergies Section */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center mb-3">
+                <div className="w-6 h-6 bg-gray-800 rounded-sm flex items-center justify-center mr-3">
+                  <AlertTriangle className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-base font-semibold text-gray-900">Allergies</h4>
+              </div>
+              <hr className="border-gray-200 mb-4" />
+              <div className="space-y-2">
+                <span className="text-sm text-gray-500">No known allergies</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Component for visit history cards that matches the Figma design
+function VisitHistoryCards({ diagnoses, selectedDate, onClearFilter }) {
+  const [currentSessionIndex, setCurrentSessionIndex] = useState(0);
+  
+  // Group diagnoses by date if a specific date is selected
+  const organizedSessions = React.useMemo(() => {
+    if (selectedDate) {
+      const sameDateSessions = diagnoses.filter(diagnosis => {
+        const diagnosisDate = new Date(diagnosis.createdAt).toDateString();
+        const filterDate = new Date(selectedDate).toDateString();
+        return diagnosisDate === filterDate;
+      });
+      return sameDateSessions;
+    }
+    return diagnoses;
+  }, [diagnoses, selectedDate]);
+
+  const currentSession = organizedSessions[currentSessionIndex];
+  
+  if (!currentSession) {
+    return (
+      <Card className="bg-white border border-gray-200 rounded-lg shadow-sm">
+        <CardContent className="text-center py-12">
+          <Stethoscope className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No sessions found</h3>
+          <p className="text-sm text-gray-500 mb-4">No sessions available for the selected criteria.</p>
+          {selectedDate && (
+            <Button variant="outline" onClick={onClearFilter}>
+              Clear Date Filter
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Main Visit History Card */}
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+        {/* Teal Header */}
+        <div className="bg-teal-500 px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Calendar className="w-5 h-5 text-white" />
+            <span className="text-white font-semibold text-base">Visit History</span>
+          </div>
+          <div className="text-white text-sm">
+            {new Date(currentSession.createdAt).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit'
+            })} at{' '}
+            {new Date(currentSession.createdAt).toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false
+            })}
+          </div>
+        </div>
+
+        {/* White Content Area */}
+        <div className="p-6">
+          {/* Visit Info */}
+          <div className="flex flex-col sm:flex-row justify-between items-start mb-6">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                {new Date(currentSession.createdAt).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit'
+                })} at{' '}
+                {new Date(currentSession.createdAt).toLocaleTimeString('en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false
+                })}
+              </h3>
+              <p className="text-sm text-gray-600">Medical Consultation</p>
+            </div>
+            <div className="flex items-center space-x-2 mt-2 sm:mt-0">
+              <span className="text-sm font-medium text-gray-900">Dr {currentSession.doctor}</span>
+              {currentSession.confidence && (
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                  currentSession.confidence >= 70 ? 'bg-green-100 text-green-800' :
+                  currentSession.confidence >= 40 ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {currentSession.confidence}% confidence
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Four Section Grid Layout - API Data Only */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Diagnosis Section */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center mb-3">
+                <div className="w-6 h-6 bg-gray-800 rounded-sm flex items-center justify-center mr-3">
+                  <FileText className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-base font-semibold text-gray-900">Diagnosis</h4>
+              </div>
+              <hr className="border-gray-200 mb-4" />
+              <div className="space-y-2">
+                {currentSession.diagnosis && currentSession.diagnosis.trim() ? (
+                  currentSession.diagnosis.split(',').map((diag, idx) => (
+                    <div key={idx} className="flex items-center">
+                      <div className="w-2 h-2 bg-teal-500 rounded-full mr-3"></div>
+                      <span className="text-sm text-gray-700">{diag.trim()}</span>
+                    </div>
+                  ))
+                ) : (
+                  <span className="text-sm text-gray-500">No diagnosis available</span>
+                )}
+              </div>
+            </div>
+
+            {/* Symptoms Section */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center mb-3">
+                <div className="w-6 h-6 bg-gray-800 rounded-sm flex items-center justify-center mr-3">
+                  <AlertTriangle className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-base font-semibold text-gray-900">Symptoms</h4>
+              </div>
+              <hr className="border-gray-200 mb-4" />
+              <div className="space-y-2">
+                {currentSession.symptoms && currentSession.symptoms.length > 0 ? (
+                  currentSession.symptoms.map((symptom, idx) => (
+                    <div key={idx} className="flex items-center">
+                      <div className="w-2 h-2 bg-teal-500 rounded-full mr-3"></div>
+                      <span className="text-sm text-gray-700">{symptom}</span>
+                    </div>
+                  ))
+                ) : (
+                  <span className="text-sm text-gray-500">No symptoms available</span>
+                )}
+              </div>
+            </div>
+
+            {/* Treatment Section */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center mb-3">
+                <div className="w-6 h-6 bg-gray-800 rounded-sm flex items-center justify-center mr-3">
+                  <Pill className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-base font-semibold text-gray-900">Treatment</h4>
+              </div>
+              <hr className="border-gray-200 mb-4" />
+              <div className="space-y-2">
+                {currentSession.treatment && currentSession.treatment.trim() ? (
+                  <div className="bg-green-50 p-3 rounded-md">
+                    <span className="text-sm text-green-800">{currentSession.treatment}</span>
+                  </div>
+                ) : (
+                  <span className="text-sm text-gray-500">No treatment plan available</span>
+                )}
+              </div>
+            </div>
+
+            {/* Allergies Section */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center mb-3">
+                <div className="w-6 h-6 bg-gray-800 rounded-sm flex items-center justify-center mr-3">
+                  <AlertTriangle className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="text-base font-semibold text-gray-900">Allergies</h4>
+              </div>
+              <hr className="border-gray-200 mb-4" />
+              <div className="space-y-2">
+                {currentSession.allergies && currentSession.allergies.length > 0 ? (
+                  currentSession.allergies.map((allergy, idx) => (
+                    <div key={idx} className="flex items-center">
+                      <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
+                      <span className="text-sm text-gray-700">{allergy}</span>
+                    </div>
+                  ))
+                ) : (
+                  <span className="text-sm text-gray-500">No allergies available</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      {/* Session Pagination */}
+      {selectedDate && organizedSessions.length > 1 && (
+        <div className="flex items-center justify-center p-4">
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentSessionIndex(Math.max(0, currentSessionIndex - 1))}
+              disabled={currentSessionIndex === 0}
+              className="px-3 py-1"
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Previous
+            </Button>
+            <span className="text-sm font-medium text-gray-700 px-4">
+              {currentSessionIndex + 1}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentSessionIndex(Math.min(organizedSessions.length - 1, currentSessionIndex + 1))}
+              disabled={currentSessionIndex === organizedSessions.length - 1}
+              className="px-3 py-1"
+            >
+              Next
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
 function PatientHistory() {
   const navigate = useNavigate();
   const location = useLocation();
   const { patientId } = useParams();
   const { user, logout } = useAuth();
+  
+  // Sidebar state
+  const [isOpen, setIsOpen] = useState(true);
+  const toggleSidebar = () => setIsOpen(!isOpen);
   
   // Check if patient data was passed through navigation state
   const passedPatient = location.state?.patient;
@@ -171,10 +544,13 @@ function PatientHistory() {
       navigate(location.pathname, { replace: true });
     }
   }, [passedPatient, location.state, location.pathname, navigate]);
+  
   const [historyData, setHistoryData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [filteredDiagnoses, setFilteredDiagnoses] = useState([]);
   const previousPatientId = useRef(null);
   const isLoadingRef = useRef(false);
 
@@ -218,6 +594,7 @@ function PatientHistory() {
         
         if (historyResponse.success && historyResponse.data) {
           setHistoryData(historyResponse.data);
+          setFilteredDiagnoses(historyResponse.data.diagnoses || []);
         }
       } catch (err) {
         setError(err.message);
@@ -231,6 +608,32 @@ function PatientHistory() {
       loadData();
     }
   }, [patientId, currentPage, passedPatient]);
+
+  // Filter diagnoses by selected date and auto-select most recent date
+  useEffect(() => {
+    if (!historyData?.diagnoses) return;
+    
+    // Auto-select most recent date on first load
+    if (!selectedDate && historyData.diagnoses.length > 0) {
+      const mostRecentDiagnosis = historyData.diagnoses.reduce((latest, current) => {
+        return new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest;
+      });
+      const mostRecentDate = new Date(mostRecentDiagnosis.createdAt).toISOString().split('T')[0];
+      setSelectedDate(mostRecentDate);
+      return;
+    }
+    
+    if (!selectedDate) {
+      setFilteredDiagnoses(historyData.diagnoses);
+    } else {
+      const filtered = historyData.diagnoses.filter(diagnosis => {
+        const diagnosisDate = new Date(diagnosis.createdAt).toDateString();
+        const filterDate = new Date(selectedDate).toDateString();
+        return diagnosisDate === filterDate;
+      });
+      setFilteredDiagnoses(filtered);
+    }
+  }, [selectedDate, historyData]);
 
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
@@ -262,156 +665,102 @@ function PatientHistory() {
     );
   }
 
+  // Helper functions for mock data
+  const getAvatarUrl = (patient) => {
+    const genderPath = patient.gender === 'female' ? 'women' : 'men';
+    const seedNumber = Math.abs(patient.name.charCodeAt(0) % 99) + 1;
+    return `https://randomuser.me/api/portraits/${genderPath}/${seedNumber}.jpg`;
+  };
+
+  const formatPatientAge = (age) => {
+    const birthYear = new Date().getFullYear() - age;
+    return `${age} years old (Born ${birthYear})`;
+  };
+
+  const getLastVisitDate = () => {
+    const dates = historyData?.diagnoses?.map(d => new Date(d.createdAt)) || [];
+    if (dates.length === 0) return 'No visits recorded';
+    const latest = new Date(Math.max(...dates));
+    return latest.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation Bar */}
-      <nav className="bg-white border-b border-gray-200">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Stethoscope className="h-8 w-8 text-gray-900" />
-              <span className="ml-2 text-xl font-semibold text-gray-900">AI Doctor</span>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">
-                Dr. {user.firstName} {user.lastName}
-              </span>
-              <Button variant="outline" onClick={logout}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <Button variant="outline" onClick={() => navigate('/dashboard')}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Dashboard
-            </Button>
-            <h1 className="text-2xl font-bold text-gray-900">Patient History</h1>
-          </div>
-        </div>
-
-        {/* Patient Details Card */}
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-                <User className="w-8 h-8 text-gray-600" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-xl font-semibold text-gray-900">{patient.name}</h2>
-                <div className="flex items-center space-x-4 mt-1">
-                  <span className="text-gray-600">Age: {patient.age} years</span>
-                  <span className="text-gray-600">Gender: {patient.gender}</span>
+    <SidebarLayout isOpen={isOpen}>
+      <Navbar toggleSidebar={toggleSidebar} user={user} logout={logout} />
+      
+      <div className="h-[calc(100vh_-_96px)] bg-[#DCE1EE] p-4 sm:p-6 md:p-8 font-sans overflow-y-auto">
+        <div className="flex flex-col gap-6">
+          {/* Patient Header Section */}
+          <div className="bg-transparent p-6 mb-3">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+              {/* Patient Info */}
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 rounded-full bg-indigo-500 flex items-center justify-center border-4 border-gray-200">
+                  <span className="text-white text-xl font-bold">
+                    {patient.name ? patient.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'NA'}
+                  </span>
                 </div>
-                <div className="mt-2">
-                  <span className="text-sm text-gray-500">Patient ID: {patient.id || patient._id}</span>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">{patient.name}</h1>
+                  <p className="text-gray-600">Complete Medical History And Visit</p>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* History Content */}
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-            <p className="text-sm text-gray-500 mt-2">Loading patient history...</p>
-          </div>
-        ) : error ? (
-          <Card>
-            <CardContent className="text-center py-12">
-              <div className="text-red-500 mb-4">
-                <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading History</h3>
-              <p className="text-sm text-gray-500">{error}</p>
-            </CardContent>
-          </Card>
-        ) : historyData && historyData.diagnoses && historyData.diagnoses.length > 0 ? (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Diagnosis History ({historyData.pagination?.total || historyData.diagnoses.length} total)
-              </h3>
-            </div>
-            <div className="space-y-4">
-              {historyData.diagnoses.map((diagnosis) => (
-                <DiagnosisHistoryCard 
-                  key={diagnosis._id} 
-                  diagnosis={diagnosis} 
+              {/* Actions */}
+              <div className="flex items-center gap-3">
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm"
                 />
-              ))}
-            </div>
-            
-            {/* Pagination Controls */}
-            {historyData.pagination && historyData.pagination.pages > 1 && (
-              <div className="mt-8 flex items-center justify-between border-t border-gray-200 pt-6">
-                <div className="flex items-center">
-                  {/* <p className="text-sm text-gray-700">
-                    page <span className="font-medium">{historyData.pagination.page}</span> of{' '}
-                    <span className="font-medium">{historyData.pagination.pages}</span> pages
-                  </p> */}
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Button
-                    onClick={handlePreviousPage}
-                    disabled={currentPage === 1}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <ChevronLeft className="w-4 h-4 mr-1" />
-                    Previous
-                  </Button>
-                  
-                  <div className="flex items-center space-x-1">
-                    {Array.from({ length: historyData.pagination.pages }, (_, i) => i + 1).map((pageNum) => (
-                      <Button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        variant={currentPage === pageNum ? 'primary' : 'outline'}
-                        size="sm"
-                        className="min-w-[40px]"
-                      >
-                        {pageNum}
-                      </Button>
-                    ))}
-                  </div>
-                  
-                  <Button
-                    onClick={handleNextPage}
-                    disabled={currentPage === historyData.pagination.pages}
-                    variant="outline"
-                    size="sm"
-                  >
-                    Next
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </Button>
-                </div>
+                <Button 
+                  className="bg-teal-600 hover:bg-teal-700 text-sm px-4 py-2"
+                  onClick={() => navigate(`/patient/${patientId}/schedule`, { 
+                    state: { patient: patient } 
+                  })}
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Schedule Visit
+                </Button>
               </div>
-            )}
+            </div>
           </div>
-        ) : (
-          <Card>
-            <CardContent className="text-center py-12">
-              <Stethoscope className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No History Found</h3>
-              <p className="text-sm text-gray-500">This patient doesn't have any diagnosis history yet.</p>
-            </CardContent>
-          </Card>
-        )}
+
+          {/* Visit History Cards */}
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto"></div>
+              <p className="text-sm text-gray-500 mt-2">Loading patient history...</p>
+            </div>
+          ) : error ? (
+            <Card className="bg-white border border-gray-200 rounded-lg shadow-sm">
+              <CardContent className="text-center py-12">
+                <div className="text-red-500 mb-4">
+                  <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading History</h3>
+                <p className="text-sm text-gray-500">{error}</p>
+              </CardContent>
+            </Card>
+          ) : filteredDiagnoses && filteredDiagnoses.length > 0 ? (
+            <VisitHistoryCards 
+              diagnoses={filteredDiagnoses} 
+              selectedDate={selectedDate}
+              onClearFilter={() => setSelectedDate('')}
+            />
+          ) : (
+            <EmptyVisitHistoryCards selectedDate={selectedDate} onClearFilter={() => setSelectedDate('')} />
+          )}
+        </div>
       </div>
-    </div>
+    </SidebarLayout>
   );
 }
 

@@ -118,7 +118,7 @@ const Login = () => {
       const response = await loginUser(formData.email, formData.password);
       login(response.user);
       toast.success('Successfully logged in!');
-      navigate('/dashboard');
+      navigate('/appointments');
     } catch (error) {
       setError(error.message);
       toast.error(error.message || 'Login failed. Please try again.');

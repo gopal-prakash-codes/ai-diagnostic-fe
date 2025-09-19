@@ -3,10 +3,10 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import './App.css'
-import Dashboard from './components/Dashboard'
 import Login from './components/Login'
 import Signup from './components/Signup'
 import PatientHistory from './components/PatientHistory'
+import ScheduleVisit from './components/ScheduleVisit'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import AppointmentManagement from "./components/AppointmentManagement"
 import PatientRecords from "./components/PatientRecords"
@@ -37,7 +37,7 @@ const ProtectedRoute = ({ children }) => {
   return user ? children : <Navigate to="/login" replace />;
 };
 
-// Public Route Component (redirects to dashboard if already logged in
+// Public Route Component (redirects to appointments if already logged in)
 const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
   
@@ -55,7 +55,7 @@ const PublicRoute = ({ children }) => {
     );
   }
   
-  return user ? <Navigate to="/dashboard" replace /> : children;
+  return user ? <Navigate to="/appointments" replace /> : children;
 };
 
 const AppContent = () => {
@@ -74,30 +74,42 @@ const AppContent = () => {
       } />
       
       {/* Protected Routes */}
-      <Route path="/dashboard" element={
-        <ProtectedRoute>
-          <Dashboard />
-        </ProtectedRoute>
-      } />
       <Route path="/patient/:patientId/history" element={
         <ProtectedRoute>
           <PatientHistory />
         </ProtectedRoute>
       } />
+      <Route path="/patient/:patientId/schedule" element={
+        <ProtectedRoute>
+          <ScheduleVisit />
+        </ProtectedRoute>
+      } />
 
-<Route path="/appointments" element={<AppointmentManagement />} />
-<Route path="/patient-record" element={<PatientRecords/>} />
+      <Route path="/appointments" element={
+        <ProtectedRoute>
+          <AppointmentManagement />
+        </ProtectedRoute>
+      } />
+      <Route path="/patient-record" element={
+        <ProtectedRoute>
+          <PatientRecords />
+        </ProtectedRoute>
+      } />
 
-          {/* <Route path="/radiology" element={<RadiologyReports />} /> */}
-          <Route path="/radiology" element={<RadiologyDashboard />} />
+      {/* <Route path="/radiology" element={<RadiologyReports />} /> */}
+      <Route path="/radiology" element={
+        <ProtectedRoute>
+          <RadiologyDashboard />
+        </ProtectedRoute>
+      } />
 
 
       
       {/* Default redirect */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<Navigate to="/appointments" replace />} />
       
       {/* Catch all route */}
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/appointments" replace />} />
     </Routes>
   );
 };

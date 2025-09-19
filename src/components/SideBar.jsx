@@ -25,37 +25,37 @@ export default function SidebarLayout({ isOpen, children }) {
         `}
       >
         {/* Sidebar header */}
-        <div className="flex items-center py-4 justify-center border-b h-20 sm:h-24">
+        <div className="flex items-center justify-center border-b border-gray-200 bg-gray-50 h-14 sm:h-16">
           {isOpen ? (
-            <div className="flex space-x-5 items-center p-2">
-              <img src={logo} alt="" className="w-14 h-14" />
-              <span className="text-xl sm:text-2xl font-semibold text-gray-800">Aarogya AI</span>
+            <div className="flex space-x-3 items-center px-4">
+              <img src={logo} alt="" className="w-8 h-8 sm:w-10 sm:h-10" />
+              <span className="text-lg sm:text-xl font-semibold text-gray-800">Aarogya AI</span>
             </div>
           ) : (
-            <img src={logo} alt="" className="w-10 h-10" />
+            <img src={logo} alt="" className="w-6 h-6 sm:w-8 sm:h-8" />
           )}
         </div>
 
         {/* Sidebar items */}
         <nav className="mt-4 pl-2 sm:pl-3 flex flex-col gap-y-6">
-          <Link to={"/appointments"} className={`${location.pathname === "/appointments" ? `text-[#2EB4B4]` : `text-black`} flex items-center justify-center sm:justify-start w-full font-[family-name:var(--font-gabarito)]`}>
-            <div className='flex items-center gap-2 w-full px-1.5 text-xl'>
-              <span className='text-2xl'><FaCalendarPlus /></span>
-              {isOpen && <span className="text-base">Appointments</span>}
+          <Link to={"/appointments"} className={`${location.pathname === "/appointments" ? `text-[#2EB4B4]` : `text-gray-700 hover:text-[#2EB4B4]`} flex items-center justify-center sm:justify-start w-full font-[family-name:var(--font-gabarito)] transition-colors duration-200`}>
+            <div className='flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-gray-50'>
+              <span className='text-xl'><FaCalendarPlus /></span>
+              {isOpen && <span className="text-sm font-medium">Appointments</span>}
             </div>
           </Link>
 
-          <Link to={"/patient-record"} className={`${location.pathname === "/patient-record" ? `text-[#2EB4B4]` : `text-black`} flex items-center justify-center sm:justify-start w-full font-[family-name:var(--font-gabarito)]`}>
-            <div className='flex items-center gap-2 w-full px-1.5 text-xl'>
-              <span className='text-3xl'><MdOutlineContactPage /></span>
-              {isOpen && <span className="text-base">Patient Records</span>}
+          <Link to={"/patient-record"} className={`${location.pathname === "/patient-record" ? `text-[#2EB4B4]` : `text-gray-700 hover:text-[#2EB4B4]`} flex items-center justify-center sm:justify-start w-full font-[family-name:var(--font-gabarito)] transition-colors duration-200`}>
+            <div className='flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-gray-50'>
+              <span className='text-xl'><MdOutlineContactPage /></span>
+              {isOpen && <span className="text-sm font-medium">Patient Records</span>}
             </div>
           </Link>
 
-          <Link to={"/radiology"} className={`${location.pathname === "/radiology" ? `text-[#2EB4B4]` : `text-black`} flex items-center justify-center sm:justify-start w-full font-[family-name:var(--font-gabarito)]`}>
-            <div className='flex items-center gap-2 w-full px-1.5 text-xl'>
-              <span className='text-2xl'><IoIosFlask /></span>
-              {isOpen && <span className="text-base">Radiology</span>}
+          <Link to={"/radiology"} className={`${location.pathname === "/radiology" ? `text-[#2EB4B4]` : `text-gray-700 hover:text-[#2EB4B4]`} flex items-center justify-center sm:justify-start w-full font-[family-name:var(--font-gabarito)] transition-colors duration-200`}>
+            <div className='flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-gray-50'>
+              <span className='text-xl'><IoIosFlask /></span>
+              {isOpen && <span className="text-sm font-medium">Radiology</span>}
             </div>
           </Link>
         </nav>

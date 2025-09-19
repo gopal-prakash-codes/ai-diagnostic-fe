@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { HiMenuAlt2 } from "react-icons/hi";
 import { IoMicOutline } from "react-icons/io5";
 import { IoNotificationsOutline } from "react-icons/io5";
@@ -9,18 +10,24 @@ import userImg from "../assets/avatar.png";
 
 export default function Navbar({ toggleSidebar, user, logout }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <nav className="bg-white border-b border-gray-200">
       <div className="w-full px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-20 sm:h-24 items-center">
+        <div className="flex justify-between h-14 sm:h-16 items-center">
           {/* Menu button */}
           <div>
             <button
               onClick={toggleSidebar}
               className="text-gray-600 hover:bg-gray-100 rounded-md p-2"
             >
-              <HiMenuAlt2 className="text-3xl sm:text-4xl" />
+              <HiMenuAlt2 className="text-2xl sm:text-3xl" />
             </button>
           </div>
 
@@ -52,7 +59,7 @@ export default function Navbar({ toggleSidebar, user, logout }) {
                   className="w-7 sm:w-8 h-7 sm:h-8 rounded-full border"
                 />
                 <span className="text-sm text-gray-700 hidden sm:inline">
-                  Dr. John Doe
+                  {user?.name || user?.email || 'User'}
                 </span>
                 <MdArrowDropDown className="w-5 h-5" />
               </button>
@@ -60,7 +67,7 @@ export default function Navbar({ toggleSidebar, user, logout }) {
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2 w-40 bg-white border rounded-md shadow-lg z-50">
                   <button
-                    onClick={logout}
+                    onClick={handleLogout}
                     className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
                     <HiOutlineLogout className="w-4 h-4 mr-2" />

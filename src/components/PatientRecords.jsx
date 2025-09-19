@@ -6,6 +6,7 @@ import SidebarLayout from "./SideBar";
 import Navbar from "./NavBar";
 import { useAuth } from "../context/AuthContext";
 import { Button, Card, CardHeader, CardContent, Input, Select, Modal } from './UI';
+import PatientModal from './PatientModal';
 
 const PatientRecords = () => {
   const [isOpen, setIsOpen] = useState(true);
@@ -19,11 +20,6 @@ const PatientRecords = () => {
   const hasLoadedPatients = useRef(false);
   const isLoadingPatients = useRef(false);
   
-  const [newPatient, setNewPatient] = useState({
-    name: '',
-    age: '',
-    gender: ''
-  });
 
   const toggleSidebar = () => setIsOpen(!isOpen);
 
@@ -60,36 +56,27 @@ const PatientRecords = () => {
     }
   }, []);
 
-  const handleCreatePatient = async () => {
-    if (!newPatient.name || !newPatient.age || !newPatient.gender) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-    if (!/^[A-Za-z\s]+$/.test(newPatient.name.trim())) {
-      toast.error('Patient name can only contain letters and spaces');
-      return;
-    }
 
-    const age = parseInt(newPatient.age);
-    if (isNaN(age) || age < 1 || age > 150) {
-      toast.error('Please enter a valid age between 1 and 150');
-      return;
-    }
-
+  const handlePatientModalSave = async (patientData) => {
     try {
       const response = await createPatient({
-        name: newPatient.name.trim(),
-        age: age,
-        gender: newPatient.gender
+        name: patientData.name.trim(),
+        age: parseInt(patientData.age),
+        gender: patientData.gender
       });
 
       if (response.success && response.data) {
         const newPatientData = response.data.patient || response.data;
         if (newPatientData && (newPatientData.id || newPatientData._id)) {
           setPatients([...patients, newPatientData]);
-          setNewPatient({ name: '', age: '', gender: '' });
-          setShowCreatePatient(false);
-          toast.success(`Patient "${newPatient.name}" created successfully!`);
+          toast.success(`Patient "${newPatientData.name}" created successfully!`);
+          
+          // Auto-navigate to patient history
+          setTimeout(() => {
+            navigate(`/patient/${newPatientData.id || newPatientData._id}/history`, { 
+              state: { patient: newPatientData } 
+            });
+          }, 1000);
         }
       }
     } catch (error) {
@@ -137,13 +124,6 @@ const PatientRecords = () => {
     return 'General Consultation';
   };
 
-  // Check if patient has alerts (placeholder logic)
-  const getPatientAlerts = (patient) => {
-    // This is placeholder logic. You might want to implement actual alert logic
-    // based on patient's medical history, overdue appointments, etc.
-    if (patient.age > 65) return Math.floor(Math.random() * 3); // Random alerts for demo
-    return Math.random() > 0.7 ? Math.floor(Math.random() * 2) + 1 : null;
-  };
 
   return (
     <SidebarLayout isOpen={isOpen}>
@@ -176,7 +156,7 @@ const PatientRecords = () => {
             </div>
 
             {/* List */}
-            <div className="divide-y">
+            <div className="flex flex-col gap-4 p-4 max-h-[36rem] overflow-y-auto">
               {loading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
@@ -189,7 +169,6 @@ const PatientRecords = () => {
                 </div>
               ) : (
                 patients.map((patient, index) => {
-                  const alerts = getPatientAlerts(patient);
                   const condition = getPatientCondition(patient);
                   const avatarUrl = getAvatarUrl(patient, index);
                   const lastVisit = formatDate(patient.updatedAt || patient.createdAt);
@@ -197,7 +176,7 @@ const PatientRecords = () => {
                   return (
                     <div
                       key={patient.id || patient._id || index}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-4 hover:bg-gray-50 gap-3"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-4 py-4 bg-white rounded-lg border border-gray-200 hover:bg-gray-50"
                     >
                       {/* Left: Avatar + Info */}
                    <div className="flex items-start sm:items-center gap-3 flex-1">
@@ -220,13 +199,8 @@ const PatientRecords = () => {
                         </div>
                       </div>
 
-                      {/* Right: Alert + Button */}
+                      {/* Right: Button */}
                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-                        {alerts && (
-                          <span className="bg-red-500 text-white text-xs px-3 py-1 rounded-md font-semibold">
-                            {alerts} Alert{alerts > 1 ? 's' : ''}
-                          </span>
-                        )}
                         <button 
                           onClick={() => handleViewRecord(patient)}
                           className="border border-gray-300 text-gray-700 text-sm px-3 py-1 rounded hover:bg-gray-100 transition-colors"
@@ -243,59 +217,13 @@ const PatientRecords = () => {
         </div>
 
         {/* Create Patient Modal */}
-        <Modal
+        <PatientModal
           isOpen={showCreatePatient}
           onClose={() => setShowCreatePatient(false)}
-          title="Create New Patient Record"
-        >
-          <div className="space-y-4">
-            <Input
-              label="Patient Name"
-              value={newPatient.name}
-              onChange={(e) => setNewPatient({ ...newPatient, name: e.target.value })}
-              placeholder="Enter patient name"
-            />
-            
-            <Input
-              label="Age"
-              type="number"
-              value={newPatient.age}
-              onChange={(e) => setNewPatient({ ...newPatient, age: e.target.value })}
-              placeholder="Enter age"
-              min="1"
-              max="150"
-            />
-            
-            <Select
-              label="Gender"
-              value={newPatient.gender}
-              onChange={(e) => setNewPatient({ ...newPatient, gender: e.target.value })}
-              placeholder="Select gender"
-            >
-              <option value="">Select gender</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
-            </Select>
-            
-<div className="flex flex-col sm:flex-row gap-3 pt-4">
-              <Button 
-                onClick={handleCreatePatient}
-                disabled={!newPatient.name || !newPatient.age || !newPatient.gender}
-                className="flex-1"
-              >
-                Create Patient
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setShowCreatePatient(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </Modal>
+          patient={null}
+          onSave={handlePatientModalSave}
+          simpleMode={true}
+        />
       </div>
     </SidebarLayout>
   );
