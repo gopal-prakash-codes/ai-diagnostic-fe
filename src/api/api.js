@@ -1,5 +1,9 @@
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE || 'http://116.202.210.102:5040/';
+// Support both VITE_NEXT_PUBLIC_API_BASE_URL and VITE_API_BASE_URL for flexibility
+export const API_BASE_URL = import.meta.env.VITE_NEXT_PUBLIC_API_BASE_URL || 
+                            import.meta.env.VITE_API_BASE_URL || 
+                            import.meta.env.VITE_API_BASE || 
+                            'http://localhost:5042/';
 
 
 export const loginUser = async (email, password) => {
@@ -93,6 +97,18 @@ export const getStoredUser = () => {
   return null;
 };
 
+export const getAuthHeaders = () => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Authentication required. Please login again.');
+  }
+  
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  };
+};
+
 export const isAuthenticated = () => {
   const token = getAuthToken();
   const user = getStoredUser();
@@ -138,6 +154,27 @@ export const getPatients = async () => {
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || `Failed to fetch patients: ${response.status} ${response.statusText}`);
+  }
+
+  return await response.json();
+};
+
+export const getPatientById = async (patientId) => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Authentication required. Please login again.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}api/patients/${patientId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || `Failed to fetch patient: ${response.status} ${response.statusText}`);
   }
 
   return await response.json();
@@ -243,6 +280,51 @@ export const getPatientHistory = async (patientId, page = 1, limit = 10) => {
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || `Failed to fetch patient history: ${response.status} ${response.statusText}`);
+  }
+
+  return await response.json();
+};
+
+// Radiology Reports API functions
+export const getRadiologyReports = async (page = 1, limit = 10) => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Authentication required. Please login again.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}api/diagnosis?page=${page}&limit=${limit}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    }
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || `Failed to fetch radiology reports: ${response.status} ${response.statusText}`);
+  }
+
+  return await response.json();
+};
+
+export const getRadiologyReportById = async (reportId) => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Authentication required. Please login again.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}api/diagnosis/${reportId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    }
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || `Failed to fetch radiology report: ${response.status} ${response.statusText}`);
   }
 
   return await response.json();

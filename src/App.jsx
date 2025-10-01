@@ -11,8 +11,9 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import AppointmentManagement from "./components/AppointmentManagement"
 import PatientRecords from "./components/PatientRecords"
 import SidebarLayout from './components/SideBar'
-// import RadiologyReports from "./components/RadiologyReports"
-import RadiologyDashboard from './components/RadiologyReportDetail'
+import RadiologyReports from "./components/RadiologyReports"
+import RadiologyReportDetail from './components/RadiologyReportDetail'
+import ReportView from './components/ReportView'
  
 
 
@@ -96,10 +97,21 @@ const AppContent = () => {
         </ProtectedRoute>
       } />
 
-      {/* <Route path="/radiology" element={<RadiologyReports />} /> */}
       <Route path="/radiology" element={
         <ProtectedRoute>
-          <RadiologyDashboard />
+          <RadiologyReports />
+        </ProtectedRoute>
+      } />
+      <Route path="/radiology-report/:reportId" element={
+        <ProtectedRoute>
+          <RadiologyReportDetail />
+        </ProtectedRoute>
+      } />
+      <Route path="/report-view/:reportId" element={
+        <ProtectedRoute>
+          <SidebarLayout>
+            <ReportView />
+          </SidebarLayout>
         </ProtectedRoute>
       } />
 

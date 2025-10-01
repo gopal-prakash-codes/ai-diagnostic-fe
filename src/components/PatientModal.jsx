@@ -138,7 +138,7 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Patient Name *
+                      Patient Name
                     </label>
                     <input
                       type="text"
@@ -146,14 +146,13 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
                       onChange={(e) => handleInputChange('name', e.target.value)}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors duration-200"
                       placeholder="Enter patient name"
-                      required
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Age *
+                        Age
                       </label>
                       <input
                         type="number"
@@ -163,19 +162,17 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
                         placeholder="Age"
                         min="1"
                         max="150"
-                        required
                       />
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Gender *
+                        Gender
                       </label>
                       <select
                         value={formData.gender}
                         onChange={(e) => handleInputChange('gender', e.target.value)}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors duration-200"
-                        required
                       >
                         <option value="">Select gender</option>
                         <option value="male">Male</option>
@@ -200,7 +197,7 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Full Name *
+                      Full Name
                     </label>
                     <input
                       type="text"
@@ -208,14 +205,13 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
                       onChange={(e) => handleInputChange('name', e.target.value)}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors duration-200"
                       placeholder="Enter patient's full name"
-                      required
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Age *
+                        Age
                       </label>
                       <input
                         type="number"
@@ -225,19 +221,17 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
                         placeholder="Age"
                         min="0"
                         max="120"
-                        required
                       />
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Gender *
+                        Gender
                       </label>
                       <select
                         value={formData.gender}
                         onChange={(e) => handleInputChange('gender', e.target.value)}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors duration-200"
-                        required
                       >
                         <option value="">Select gender</option>
                         <option value="male">Male</option>

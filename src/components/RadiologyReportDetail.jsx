@@ -1,254 +1,1349 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import SidebarLayout from "./SideBar";
 import Navbar from "./NavBar";
 import { useAuth } from '../context/AuthContext';
-import { IoIosFlask } from "react-icons/io";
-import { RiTempColdLine } from "react-icons/ri";
-import { IoDocumentTextOutline, IoCloudUploadOutline, IoDownloadOutline } from 'react-icons/io5';
-import { FaStethoscope, FaClipboardCheck, FaExclamationTriangle, FaLightbulb } from 'react-icons/fa';
+import { IoIosFlask } from "react-icons/io"
+import { IoCloudUploadOutline, IoEyeOutline, IoDocumentTextOutline, IoTrashOutline, IoCloseOutline, IoCube } from 'react-icons/io5';
+import radiologyApi from '../api/radiologyApi';
+import { getPatients, getPatientById, API_BASE_URL, getAuthHeaders } from '../api/api';
+import Enhanced3DViewer from './Enhanced3DViewer';
+import ProfessionalDICOMViewer from './ProfessionalDICOMViewer';
 
-// Mock data for radiology reports, now with unique IDs and detailed info
-const radiologyReports = [
-    {
-        id: 1,
-        name: 'John Smith',
-        status: 'Completed',
-        date: '2025-11-09',
-        reportType: 'Complete Blood Count',
-        avatar: 'https://randomuser.me/api/portraits/men/1.jpg',
-        alert: false,
-        reportDetails: {
-            panelName: "Lipid Panel",
-            patientAgeSex: "32, F",
-            reportId: "Lab-002",
-            doctorName: "Mike Brown",
-            clinicName: "Wellness Family Practice",
-            clinicAddress: "70 Washington Square South, New York, NY 10012, United States",
-            clinicalFindings: "There Is A Large 5.0 Cm Cavitary Mass Located In The Right Lower Lobe.No Consolidation, Ground-Glass Opacities, Pleural Effusion, Pneumothorax, Or Lymphadenopathy Are Identified.",
-            diagnosis: "Suspicious Cavitary Mass In The Right Lower Lobe, Differential Includes Malignancy (e.g primary lung cancer) Or Infectious Etiologies Such A Abscess",
-            urgencyLevel: "Priority",
-            recommendedActions: "Recommend Further Evaluation With Tissue Biopsy And Microbiological Studies To Determine Aetiology. Consider PET-CT For Staging If Malignancy Is Suspected. Close Clinical Follow-Up And Possible Initiation Of Empiric Antibiotics If Infection Is Suspected"
-        }
-    },
-    {
-        id: 2,
-        name: 'John Smith',
-        status: 'In Progress',
-        date: '2025-11-09',
-        reportType: 'Complete Blood Count',
-        avatar: 'https://randomuser.me/api/portraits/men/1.jpg',
-        alert: false,
-        reportDetails: {
-            panelName: "Complete Blood Count",
-            patientAgeSex: "45, M",
-            reportId: "Lab-001",
-            doctorName: "Dr. Mike Brown",
-            clinicName: "Wellness Family Practice",
-            clinicAddress: "70 Washington Square South, New York, NY 10012, United States",
-            clinicalFindings: "Initial lab work shows elevated white blood cell count and C-reactive protein.",
-            diagnosis: "Inflammatory response of unknown origin.",
-            urgencyLevel: "Routine",
-            recommendedActions: "Monitor patient, perform further tests to determine the source of inflammation."
-        }
-    },
-    {
-        id: 3,
-        name: 'Sarah Davis',
-        status: 'Completed',
-        date: '2025-11-09',
-        reportType: 'Complete Blood Count',
-        avatar: 'https://randomuser.me/api/portraits/women/4.jpg',
-        alert: true,
-        reportDetails: {
-            panelName: "Complete Blood Count",
-            patientAgeSex: "32, F",
-            reportId: "Lab-003",
-            doctorName: "Dr. S. Williams",
-            clinicName: "Community Medical Group",
-            clinicAddress: "456 Oak Ave, Somewhere, USA",
-            clinicalFindings: "No significant finding in the current radiology test.",
-            diagnosis: "Clear, normal results.",
-            urgencyLevel: "Routine",
-            recommendedActions: "No further action required."
-        }
-    },
-    {
-        id: 4, name: 'John Smith', status: 'Completed', date: '2025-11-09', reportType: 'Complete Blood Count', avatar: 'https://randomuser.me/api/portraits/men/1.jpg', alert: false, reportDetails: {
-            panelName: "Lipid Panel", patientAgeSex: "45, M", reportId: "Lab-004", doctorName: "Dr. Mike Brown", clinicName: "Wellness Family Practice", clinicAddress: "70 Washington Square South, New York, NY 10012, United States", clinicalFindings: "A detailed report...", diagnosis: "Normal results.", urgencyLevel: "Routine", recommendedActions: "No further action required."
-        }
-    },
-    {
-        id: 5, name: 'Sarah Davis', status: 'Completed', date: '2025-11-09', reportType: 'Complete Blood Count', avatar: 'https://randomuser.me/api/portraits/women/4.jpg', alert: true, reportDetails: {
-            panelName: "X-Ray", patientAgeSex: "32, F", reportId: "Lab-007", doctorName: "Dr. Mike Brown", clinicName: "Wellness Family Practice", clinicAddress: "70 Washington Square South, New York, NY 10012, United States", clinicalFindings: "Small fracture in the left radius.", diagnosis: "Left forearm fracture.", urgencyLevel: "Priority", recommendedActions: "Apply cast and schedule a follow-up appointment."
-        }
-    },
-];
 
-const getStatusClass = (status) => {
-    switch (status) {
-        case 'Completed':
-            return 'bg-[#2EB4B4] text-white';
-        case 'In Progress':
-            return 'bg-[#FFC658] text-white';
-        default:
-            return 'bg-gray-300';
-    }
-};
-
-const RadiologyDashboard = () => {
+const RadiologyReportDetail = () => {
     const [isOpen, setIsOpen] = useState(true);
+    const [uploadedImage, setUploadedImage] = useState(null);
+    const [uploadedZipFile, setUploadedZipFile] = useState(null);
+    const [selectedScanType, setSelectedScanType] = useState('');
+    const [isAnalyzing2D, setIsAnalyzing2D] = useState(false);
+    const [isAnalyzing3D, setIsAnalyzing3D] = useState(false);
+    const [analysisResults, setAnalysisResults] = useState([]);
+    const [jobStatuses, setJobStatuses] = useState({});
+    const [selectedResult, setSelectedResult] = useState(null);
+    const [showResultModal, setShowResultModal] = useState(false);
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [showImageModal, setShowImageModal] = useState(false);
+    const [show3DViewer, setShow3DViewer] = useState(false);
+    const [viewerType, setViewerType] = useState('basic'); // 'basic', '3d', 'volume', 'professional'
+    
+    // New state for database integration
+    const [reportData, setReportData] = useState(null);
+    const [scanRecords, setScanRecords] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [patientData, setPatientData] = useState(null);
+    const [patientReports, setPatientReports] = useState([]);
+    const loadingRef = useRef(false);
+    const currentReportIdRef = useRef(null);
+    
     const toggleSidebar = () => setIsOpen(!isOpen);
     const { user, logout } = useAuth();
-    const [selectedReport, setSelectedReport] = useState(null);
+    const { reportId } = useParams();
+    const navigate = useNavigate();
+    
+    // Analysis is now handled through Node.js backend - no direct API calls needed
+    
 
-    const handleViewReport = (report) => {
-        setSelectedReport(report);
+    const loadReportData = useCallback(async () => {
+        if (loadingRef.current || currentReportIdRef.current === reportId) {
+            return;
+        }
+        
+        loadingRef.current = true;
+        currentReportIdRef.current = reportId;
+        try {
+            setLoading(true);
+            
+            if (!reportId.startsWith('new-')) {
+                try {
+                    const response = await radiologyApi.getReport(reportId);
+                    if (response.success) {
+                        // Update with real data if report exists
+                        setReportData(response.data.report);
+                        setPatientData(response.data.report.patient);
+                        setScanRecords(response.data.scanRecords || []);
+                        setSelectedScanType(response.data.report.reportType);
+                        
+                        // Load analysis results from scan records
+                        const results = response.data.scanRecords.map(scan => ({
+                            id: scan._id,
+                            scanType: scan.scanType,
+                            fileName: scan.originalFileName,
+                            type: scan.fileType,
+                            success: scan.analysisStatus === 'completed',
+                            status: scan.analysisStatus,
+                            jobId: scan.analysisJobId,
+                            analysisResult: scan.analysisResult,
+                            scanRecord: scan
+                        }));
+                        
+                        setAnalysisResults(results);
+                    }
+                } catch (reportError) {
+                    
+                    // If report doesn't exist, check if this is a patient ID
+                    // and try to load the most recent report for this patient
+                    try {
+                        const patientReportsResponse = await radiologyApi.getPatientReports(reportId, { page: 1, limit: 1 });
+                        if (patientReportsResponse.success && patientReportsResponse.data.reports.length > 0) {
+                            const latestReport = patientReportsResponse.data.reports[0];
+                            
+                            // Redirect to the actual report ID
+                            navigate(`/radiology-report/${latestReport.reportId}`, { replace: true });
+                            return;
+                        }
+                    } catch (patientError) {
+                        // No existing reports found for patient, will create new report
+                    }
+                    
+                    // If no existing reports, initialize for new report creation
+                    setScanRecords([]);
+                    setAnalysisResults([]);
+                    
+                    if (/^[0-9a-fA-F]{24}$/.test(reportId)) {
+                        try {
+                            const patientResult = await getPatientById(reportId);
+                            if (patientResult.success) {
+                                const patient = patientResult.data.patient || patientResult.data;
+                                setPatientData(patient);
+                                setReportData({
+                                    reportId: `new-${reportId}`,
+                                    patient: patient,
+                                    reportType: "Report",
+                                    date: new Date().toISOString(),
+                                    status: 'draft'
+                                });
+                                
+                                // Also load existing reports for this patient
+                                try {
+                                    const reportsResponse = await radiologyApi.getPatientReports(reportId, { page: 1, limit: 10 });
+                                    if (reportsResponse.success && reportsResponse.data.reports) {
+                                        setPatientReports(reportsResponse.data.reports);
+                                    }
+                                } catch (reportsError) {
+                                    setPatientReports([]);
+                                }
+                            } else {
+                                throw new Error('Patient not found');
+                            }
+                        } catch (patientError) {
+                            console.error('Error loading patient data:', patientError);
+                            // Set fallback data
+                            setReportData({
+                                reportId: `new-${reportId}`,
+                                patient: { _id: reportId, name: 'Loading...', age: 0, gender: 'male' },
+                                reportType: "Report",
+                                date: new Date().toISOString(),
+                                status: 'draft'
+                            });
+                        }
+                    }
+                }
+            } else {
+                // For new reports, initialize empty arrays
+                setScanRecords([]);
+                setAnalysisResults([]);
+            }
+        } catch (error) {
+            console.error('Error loading report data:', error);
+            // Don't redirect on error - let user continue with dummy data
+            toast.warn('Using default report template');
+        } finally {
+            setLoading(false);
+            loadingRef.current = false; // Reset loading flag
+        }
+    }, [reportId, navigate]); // Dependencies for useCallback
+
+    // Load report data when reportId changes
+    useEffect(() => {
+        // Reset refs when reportId changes
+        if (currentReportIdRef.current !== reportId) {
+            loadingRef.current = false;
+            currentReportIdRef.current = null;
+        }
+        loadReportData();
+    }, [reportId, loadReportData]);
+
+    const dummyReport = reportData || {
+        reportId: reportId,
+        patient: { name: "Loading...", age: 0, gender: "male" },
+        reportType: selectedScanType || "Report",
+        date: new Date().toISOString(),
+        doctor: "Dr. [To be filled]",
+        clinicName: "Clinic [To be filled]",
+        clinicAddress: "Address [To be filled]",
+        symptoms: ["Pending Analysis"],
+        diagnosis: "Pending Analysis - Upload and analyze medical images to generate diagnosis",
+        confidence: 0,
+        treatment: "Treatment plan will be generated after image analysis"
     };
+
+    // Helper function to ensure report exists in database
+    const ensureReportExists = async () => {
+        // Only create report if it doesn't exist yet
+        if (!reportData || !reportData._id) {
+            try {
+                
+                let patientResponse;
+                if (reportData?.patient?._id) {
+                    try {
+                        const patientResult = await getPatientById(reportData.patient._id);
+                        if (patientResult.success) {
+                            patientResponse = { data: patientResult.data.patient }; // Backend returns data.patient
+                        } else {
+                            throw new Error('Patient not found');
+                        }
+                    } catch (error) {
+                        console.error('Error fetching patient:', error);
+                        // Fallback to creating a default patient
+                        patientResponse = await radiologyApi.getOrCreatePatient({
+                            name: "New Patient",
+                            age: 30,
+                            gender: "male"
+                        });
+                    }
+                } else {
+                    // Fallback to creating a default patient
+                    patientResponse = await radiologyApi.getOrCreatePatient({
+                        name: patientData?.name || "New Patient",
+                        age: patientData?.age || 30,
+                        gender: patientData?.gender || "male"
+                    });
+                }
+
+                if (!patientResponse.data || !patientResponse.data._id) {
+                    throw new Error('Failed to create or find patient');
+                }
+
+                // Create report
+                const reportPayload = {
+                    patientId: patientResponse.data._id,
+                    reportType: selectedScanType || 'Report',
+                    doctor: reportData?.doctor || "Dr. [To be filled]",
+                    clinicName: reportData?.clinicName || "Clinic [To be filled]",
+                    clinicAddress: reportData?.clinicAddress || "Address [To be filled]",
+                    symptoms: reportData?.symptoms || ["Pending Analysis"],
+                    diagnosis: reportData?.diagnosis || "Pending Analysis - Upload and analyze medical images to generate diagnosis",
+                    confidence: reportData?.confidence || 0,
+                    treatment: reportData?.treatment || "Treatment plan will be generated after image analysis"
+                };
+
+                const reportResponse = await radiologyApi.createReport(reportPayload);
+                
+                if (reportResponse.success) {
+                    const newReport = reportResponse.data;
+                    setReportData(newReport);
+                    setPatientData(patientResponse.data);
+                    
+                    // Update URL to use the real report ID (but don't reload page)
+                    const newReportId = newReport.reportId;
+                    window.history.replaceState(null, null, `/radiology-report/${newReportId}`);
+                    return newReport;
+                } else {
+                    throw new Error('Failed to create report');
+                }
+            } catch (error) {
+                console.error('Error creating report:', error);
+                toast.error('Failed to create report in database');
+                throw error;
+            }
+        }
+        return reportData;
+    };
+    
+    // Poll for analysis results
+    const pollAnalysisResult = (analysisId, resultId) => {
+        let attempts = 0;
+        const maxAttempts = 200; // ~10 minutes max
+        
+        const pollInterval = setInterval(async () => {
+            attempts += 1;
+            
+            if (attempts > maxAttempts) {
+                clearInterval(pollInterval);
+                setAnalysisResults(prev => prev.map(result => 
+                    result.id === resultId 
+                        ? { ...result, status: 'timeout', success: false }
+                        : result
+                ));
+                toast.error('Analysis timed out');
+                return;
+            }
+            
+            try {
+                const response = await radiologyApi.getAnalysisResult(analysisId);
+                
+                if (response.success) {
+                    const analysisData = response.data;
+                    
+                    if (analysisData.analysisStatus === 'completed') {
+                clearInterval(pollInterval);
+                
+                setAnalysisResults(prev => prev.map(result => 
+                            result.id === resultId 
+                                ? { 
+                                    ...result, 
+                                    status: 'completed', 
+                success: true,
+                                    data: analysisData,
+                                    analysisResult: analysisData
+                                }
+                        : result
+                ));
+                
+                        toast.success('Analysis completed successfully!');
+                        
+                    } else if (analysisData.analysisStatus === 'failed') {
+                clearInterval(pollInterval);
+                
+                setAnalysisResults(prev => prev.map(result => 
+                            result.id === resultId 
+                                ? { 
+                                    ...result, 
+                                    status: 'failed', 
+                success: false,
+                                    error: analysisData.errorMessage || 'Analysis failed'
+                                }
+                        : result
+                ));
+                
+                        toast.error('Analysis failed');
+                    }
+                }
+        } catch (error) {
+                console.error('Error polling analysis result:', error);
+                // Continue polling despite errors
+            }
+        }, 3000); // Poll every 3 seconds
+    };
+
+    // Old API functions removed - now using Node.js backend integration
+
+    // Handle file uploads - single file only, replaces existing
+    const handleImageUpload = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            setUploadedImage(file);
+            toast.success(`Image uploaded: ${file.name}`);
+        }
+    };
+
+    const handleZipUpload = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            setUploadedZipFile(file);
+            toast.success(`ZIP file uploaded: ${file.name}`);
+        }
+    };
+
+    const handleScanTypeChange = (event) => {
+        const scanType = event.target.value;
+        setSelectedScanType(scanType);
+        
+        if (scanType) {
+            if (uploadedImage || uploadedZipFile) {
+                toast.success(`Ready to analyze ${scanType} scans`);
+            } else {
+                toast.info(`Please upload files to analyze ${scanType} scans`);
+            }
+        }
+    };
+    
+    const removeImage = () => {
+        setUploadedImage(null);
+        toast.info('Image removed');
+    };
+    
+    const removeZipFile = () => {
+        setUploadedZipFile(null);
+        toast.info('ZIP file removed');
+    };
+
+    const handleAnalyze2D = async () => {
+        if (!uploadedImage) {
+            toast.error('Please upload an image to analyze.');
+            return;
+        }
+        
+        if (!selectedScanType) {
+            toast.error('Please select a scan type.');
+            return;
+        }
+        
+        setIsAnalyzing2D(true);
+        
+        try {
+            // First, ensure we have a saved report
+            const currentReport = await ensureReportExists();
+            
+            // Upload the file to the database and storage
+            const formData = new FormData();
+            formData.append('image', uploadedImage);
+            formData.append('scanType', selectedScanType);
+            const uploadResponse = await radiologyApi.uploadScanFiles(currentReport.reportId, formData);
+            
+            if (uploadResponse.success && uploadResponse.data.length > 0) {
+                const uploadResult = uploadResponse.data.find(result => result.type === '2D');
+                
+                if (uploadResult) {
+                    
+                    // Start analysis
+                    const analysisResponse = await radiologyApi.startAnalysis(
+                        uploadResult.scanRecord._id, 
+                        '2D'
+                    );
+                    
+                    if (analysisResponse.success) {
+                        // Add to analysis results for UI tracking
+                        const newResult = {
+                            id: uploadResult.scanRecord._id,
+                            scanType: selectedScanType,
+                            fileName: uploadedImage.name,
+                            type: '2D',
+                            success: false,
+                            status: 'processing',
+                            scanRecord: uploadResult.scanRecord
+                        };
+                        
+                        setAnalysisResults(prev => [...prev, newResult]);
+                        setScanRecords(prev => [...prev, uploadResult.scanRecord]);
+                        
+                        toast.success('2D Analysis started successfully!');
+                        
+                        // Start polling for completion (check every 3 seconds)
+                        const pollForCompletion = setInterval(async () => {
+                            try {
+                                const reportResponse = await radiologyApi.getReport(currentReport.reportId);
+                                if (reportResponse.success) {
+                                    const updatedScanRecords = reportResponse.data.scanRecords || [];
+                                    const updatedScan = updatedScanRecords.find(scan => scan._id === uploadResult.scanRecord._id);
+                                    
+                                    if (updatedScan && updatedScan.analysisStatus === 'completed') {
+                                        clearInterval(pollForCompletion);
+                                        
+                                        // Update the result in state
+                                        setAnalysisResults(prev => prev.map(result => 
+                                            result.id === uploadResult.scanRecord._id 
+                                                ? { 
+                                                    ...result, 
+                                                    status: 'completed', 
+                                                    success: true,
+                                                    analysisResult: updatedScan.analysisResult,
+                                                    scanRecord: updatedScan
+                                                }
+                                                : result
+                                        ));
+                                        
+                                        setScanRecords(prev => prev.map(scan => 
+                                            scan._id === uploadResult.scanRecord._id ? updatedScan : scan
+                                        ));
+                                        
+                                        toast.success('2D Analysis completed!');
+                                    } else if (updatedScan && updatedScan.analysisStatus === 'failed') {
+                                        clearInterval(pollForCompletion);
+                                        
+                                        setAnalysisResults(prev => prev.map(result => 
+                                            result.id === uploadResult.scanRecord._id 
+                                                ? { ...result, status: 'failed', success: false }
+                                                : result
+                                        ));
+                                        
+                                        // Get error message from analysis result
+                                        const errorMsg = updatedScan.analysisResult?.errorMessage || 'Analysis failed';
+                                        const shortError = errorMsg.length > 100 ? 
+                                            errorMsg.substring(0, 100) + '...' : errorMsg;
+                                        
+                                        toast.error(`2D Analysis failed: ${shortError}. Please try again.`);
+                                    }
+                                }
+                            } catch (pollError) {
+                                console.error('Polling error:', pollError);
+                            }
+                        }, 3000);
+                        
+                        // Stop polling after 10 minutes
+                        setTimeout(() => {
+                            clearInterval(pollForCompletion);
+                        }, 600000);
+                    }
+                }
+            }
+            
+        } catch (error) {
+            console.error('2D Analysis error:', error);
+            toast.error(error.message || 'An error occurred during 2D analysis. Please try again.');
+        } finally {
+            setIsAnalyzing2D(false);
+        }
+    };
+    
+
+    const handleAnalyze3D = async () => {
+        if (!uploadedZipFile) {
+            toast.error('Please upload a ZIP file to analyze.');
+            return;
+        }
+        
+        if (!selectedScanType) {
+            toast.error('Please select a scan type.');
+            return;
+        }
+        
+        setIsAnalyzing3D(true);
+        
+        try {
+            // First, ensure we have a saved report
+            const currentReport = await ensureReportExists();
+            
+            // Upload the file to the database and storage
+            const formData = new FormData();
+            formData.append('zipFile', uploadedZipFile);
+            formData.append('scanType', selectedScanType);
+            const uploadResponse = await radiologyApi.uploadScanFiles(currentReport.reportId, formData);
+            
+            if (uploadResponse.success && uploadResponse.data.length > 0) {
+                const uploadResult = uploadResponse.data.find(result => result.type === '3D');
+                
+                if (uploadResult) {
+                    
+                    // Start analysis
+                    const analysisResponse = await radiologyApi.startAnalysis(
+                        uploadResult.scanRecord._id, 
+                        '3D'
+                    );
+                    
+                    if (analysisResponse.success) {
+                        // Add to analysis results for UI tracking
+                        const newResult = {
+                            id: uploadResult.scanRecord._id,
+                            scanType: selectedScanType,
+                            fileName: uploadedZipFile.name,
+                            type: '3D',
+                            success: false,
+                            status: 'processing',
+                            jobId: analysisResponse.data.jobId,
+                            scanRecord: uploadResult.scanRecord
+                        };
+                        
+                        setAnalysisResults(prev => [...prev, newResult]);
+                        setScanRecords(prev => [...prev, uploadResult.scanRecord]);
+                        
+                toast.success('3D Analysis started successfully!');
+                        
+                        // Start polling for completion (check every 5 seconds for 3D)
+                        const pollForCompletion = setInterval(async () => {
+                            try {
+                                const reportResponse = await radiologyApi.getReport(currentReport.reportId);
+                                if (reportResponse.success) {
+                                    const updatedScanRecords = reportResponse.data.scanRecords || [];
+                                    const updatedScan = updatedScanRecords.find(scan => scan._id === uploadResult.scanRecord._id);
+                                    
+                                    if (updatedScan && updatedScan.analysisStatus === 'completed') {
+                                        clearInterval(pollForCompletion);
+                                        
+                                        // Update the result in state
+                                        setAnalysisResults(prev => prev.map(result => 
+                                            result.id === uploadResult.scanRecord._id 
+                                                ? { 
+                                                    ...result, 
+                                                    status: 'completed', 
+                                                    success: true,
+                                                    analysisResult: updatedScan.analysisResult,
+                                                    scanRecord: updatedScan
+                                                }
+                                                : result
+                                        ));
+                                        
+                                        setScanRecords(prev => prev.map(scan => 
+                                            scan._id === uploadResult.scanRecord._id ? updatedScan : scan
+                                        ));
+                                        
+                                        toast.success('3D Analysis completed!');
+                                    } else if (updatedScan && updatedScan.analysisStatus === 'failed') {
+                                        clearInterval(pollForCompletion);
+                                        
+                                        setAnalysisResults(prev => prev.map(result => 
+                                            result.id === uploadResult.scanRecord._id 
+                                                ? { ...result, status: 'failed', success: false }
+                                                : result
+                                        ));
+                                        
+                                        // Get error message from analysis result
+                                        const errorMsg = updatedScan.analysisResult?.errorMessage || 'Analysis failed';
+                                        const shortError = errorMsg.length > 100 ? 
+                                            errorMsg.substring(0, 100) + '...' : errorMsg;
+                                        
+                                        toast.error(`3D Analysis failed: ${shortError}. Please try again.`);
+                                    }
+                                }
+                            } catch (pollError) {
+                                console.error('3D Polling error:', pollError);
+                            }
+                        }, 5000);
+                        
+                        // Stop polling after 15 minutes (3D takes longer)
+                        setTimeout(() => {
+                            clearInterval(pollForCompletion);
+                        }, 900000);
+                    }
+                }
+            }
+            
+        } catch (error) {
+            console.error('3D Analysis error:', error);
+            toast.error(error.message || 'An error occurred during 3D analysis. Please try again.');
+        } finally {
+            setIsAnalyzing3D(false);
+        }
+    };
+    
+    
+    const handleViewImage = async (scanRecordId, fileName, fileType = 'original', viewerType = 'basic') => {
+        try {
+            const response = await radiologyApi.generateDownloadUrl(scanRecordId, fileType);
+            
+            if (response.success) {
+                setSelectedImage({
+                    url: response.data.downloadUrl,
+                    fileName: fileName,
+                    fileType: fileType
+                });
+                setViewerType(viewerType);
+                
+                if (viewerType === '3d' || viewerType === 'volume' || viewerType === 'professional') {
+                    setShow3DViewer(true);
+                } else {
+                    setShowImageModal(true);
+                }
+            } else {
+                toast.error('Failed to load image.');
+            }
+        } catch (error) {
+            console.error('Image viewing error:', error);
+            toast.error('Failed to load image.');
+        }
+    };
+
+    const close3DViewer = () => {
+        setShow3DViewer(false);
+        setSelectedImage(null);
+        setViewerType('basic');
+    };
+    
+    const handleViewResult = async (result) => {
+        try {
+            let resultData = result;
+            
+            // If we have an analysisResult from database, use that data
+            if (result.analysisResult && result.analysisResult._id) {
+                const analysisResponse = await radiologyApi.getAnalysisResult(result.analysisResult._id);
+                if (analysisResponse.success) {
+                    resultData = {
+                        ...result,
+                        data: {
+                            modality: analysisResponse.data.modality,
+                            urgency: analysisResponse.data.urgency,
+                            findings: analysisResponse.data.findings,
+                            diagnosis: analysisResponse.data.diagnosis,
+                            treatment_plan: analysisResponse.data.treatmentPlan,
+                            confidence_summary: analysisResponse.data.confidenceSummary,
+                            limitations: analysisResponse.data.limitations
+                        },
+                        analysisResult: analysisResponse.data
+                    };
+                }
+            }
+            
+            setSelectedResult(resultData);
+            setShowResultModal(true);
+        } catch (error) {
+            console.error('Error loading analysis result:', error);
+            // Still show the modal with available data
+        setSelectedResult(result);
+        setShowResultModal(true);
+            toast.error('Could not load detailed analysis data');
+        }
+    };
+    
+    const closeResultModal = () => {
+        setShowResultModal(false);
+        setSelectedResult(null);
+    };
+    
+    // Generate table data from analysis results
+    const getTableData = () => {
+        if (analysisResults.length === 0 && scanRecords.length === 0) {
+            // Return empty array if no results - don't show sample data
+            return [];
+        }
+        
+        // Combine analysis results with scan records
+        const combinedData = [];
+        
+        // Add analysis results
+        analysisResults.forEach((result) => {
+            combinedData.push({
+                id: result.id,
+            scanType: result.scanType,
+            fileName: result.fileName,
+            type: result.type,
+            originalDicom: "available",
+                analysedDicom: result.status === 'processing' ? 'processing' : 
+                              result.status === 'completed' ? 'available' : 
+                              result.status === 'failed' ? 'failed' : 'pending',
+                report: result.status === 'completed' ? 'available' : 
+                       result.status === 'failed' ? 'failed' : 'pending',
+            result: result,
+                scanRecord: result.scanRecord
+            });
+        });
+        
+        // Add scan records that don't have analysis results yet
+        scanRecords.forEach((scanRecord) => {
+            const existingResult = analysisResults.find(r => r.id === scanRecord._id);
+            if (!existingResult) {
+                combinedData.push({
+                    id: scanRecord._id,
+                    scanType: scanRecord.scanType,
+                    fileName: scanRecord.originalFileName,
+                    type: scanRecord.fileType,
+                    originalDicom: "available",
+                    analysedDicom: scanRecord.analysisStatus === 'processing' ? 'processing' : 
+                                  scanRecord.analysisStatus === 'completed' ? 'available' : 
+                                  scanRecord.analysisStatus === 'failed' ? 'failed' : 'pending',
+                    report: scanRecord.analysisStatus === 'completed' ? 'available' : 
+                           scanRecord.analysisStatus === 'failed' ? 'failed' : 'pending',
+                    scanRecord: scanRecord
+                });
+            }
+        });
+        
+        return combinedData;
+    };
+
+
+    if (loading) {
+    return (
+        <SidebarLayout isOpen={isOpen}>
+            <Navbar toggleSidebar={toggleSidebar} user={user} logout={logout} />
+            <div className="h-[calc(100vh_-_96px)] bg-[#DCE1EE] p-4 sm:p-6 md:p-8 font-sans overflow-y-auto relative pb-20">
+                    <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2EB4B4] mx-auto mb-4"></div>
+                            <p className="text-gray-600">Loading report data...</p>
+                        </div>
+                    </div>
+                </div>
+            </SidebarLayout>
+        );
+    }
 
     return (
         <SidebarLayout isOpen={isOpen}>
             <Navbar toggleSidebar={toggleSidebar} user={user} logout={logout} />
             <div className="h-[calc(100vh_-_96px)] bg-[#DCE1EE] p-4 sm:p-6 md:p-8 font-sans overflow-y-auto relative pb-20">
-                {selectedReport ? (
+
+                {/* Report Detail - 2D Analysis Section */}
+                <div className="flex flex-col">
                     <div className="flex flex-col">
                         <div className="">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                                 <div>
-                                    <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2 mb-2">
-                          {selectedReport.reportDetails.panelName}
-                                        <span className={`ml-3 text-sm px-3 py-1 rounded-full font-semibold ${getStatusClass(selectedReport.status)}`}>
-                                            {selectedReport.status}
-                                        </span>
+                                    <h2 className="text-2xl font-bold text-[#2EB4B4] mb-2">
+                                        {patientData?.name || dummyReport.patient?.name || "Loading..."}
                                     </h2>
                                     <p className="text-black text-md">
-                                        Patient: <span className="font-semibold text-[#2EB4B4]">{selectedReport.name} ({selectedReport.reportDetails.patientAgeSex})</span> • ReportID: <span className="font-medium">{selectedReport.reportDetails.reportId}</span>
+                                        Age: <span className="font-semibold">{patientData?.age || dummyReport.patient?.age || 0}</span> • Gender: <span className="font-semibold">{patientData?.gender?.toUpperCase() || dummyReport.patient?.gender?.toUpperCase() || "N/A"}</span>
                                     </p>
                                 </div>
-                                <div className="text-right text-black text-sm">
-                                    <p className="font-semibold">{selectedReport.reportDetails.doctorName}</p>
-                                    <p>{selectedReport.reportDetails.clinicName}</p>
-                                    <p>{selectedReport.reportDetails.clinicAddress}</p>
+                                <div className="flex flex-col gap-4">
+                                    {/* Type Dropdown */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                                        <select 
+                                            value={selectedScanType}
+                                            onChange={handleScanTypeChange}
+                                            className="w-48 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2EB4B4] focus:border-transparent"
+                                        >
+                                            <option value="">Select Type</option>
+                                            <option value="Report">Report</option>
+                                            <option value="MRI">MRI</option>
+                                            <option value="CT-SCAN">CT-SCAN</option>
+                                            <option value="X-RAY">X-RAY</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* File Upload / Drag & Drop Area */}
-                        <div className="bg-white rounded-lg shadow-sm p-6 mb-6 border-dashed border-2 border-gray-300 text-center">
-                            <IoCloudUploadOutline className="mx-auto text-5xl text-gray-400 mb-3" />
-                            <p className="text-md sm:text-lg font-semibold text-gray-700 mb-1">Drag & Drop Files Here Or Click To Upload</p>
-                            <p className="text-sm text-gray-500">PDFs, CAD Exports, Excel Schedules, Specs</p>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
-                            <button className="bg-[#2EB4B4] text-white px-6 py-3 rounded-md flex items-center gap-2 hover:bg-[#258B8B] transition-colors">
-                                <IoDownloadOutline className="text-xl" /> Download Dicom Image
-                            </button>
-                            <button className="bg-white text-[#2EB4B4] px-6 py-3 rounded-md flex items-center gap-2 hover:bg-gray-100 transition-colors border border-[#2EB4B4]">
-                                <IoDownloadOutline className="text-xl" /> Download Generated Report
-                            </button>
-                        </div>
-
-                        {/* Analysis Section Header */}
-                        <div className="flex items-center gap-2 bg-[#2EB4B4] px-4 py-3 text-white font-semibold text-lg rounded-t-lg">
-                            <IoIosFlask className="text-2xl" /> Analysis
-                        </div>
-
-                        {/* Analysis Cards Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                            <div className="bg-white rounded-b-lg shadow-sm p-6">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                                    <FaStethoscope className="text-blue-600" /> Clinical Findings
-                                </h3>
-                                <p className="text-gray-700 text-sm leading-relaxed">{selectedReport.reportDetails.clinicalFindings}</p>
-                            </div>
-                            <div className="bg-white rounded-lg shadow-sm p-6">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                                    <FaClipboardCheck className="text-blue-600" /> Diagnosis
-                                </h3>
-                                <p className="text-gray-700 text-sm leading-relaxed">{selectedReport.reportDetails.diagnosis}</p>
-                            </div>
-                            <div className="bg-white rounded-lg shadow-sm p-6">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                                    <FaExclamationTriangle className="text-[#ff5b61]" /> Urgency Level
-                                </h3>
-                                <span className="bg-[#ff5b61] text-white text-xs px-3 py-1 rounded-md font-semibold">{selectedReport.reportDetails.urgencyLevel}</span>
-                            </div>
-                            <div className="bg-white rounded-lg shadow-sm p-6">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                                    <FaLightbulb className="text-yellow-500" /> Recommended Actions
-                                </h3>
-                                <p className="text-gray-700 text-sm leading-relaxed">{selectedReport.reportDetails.recommendedActions}</p>
-                            </div>
-                        </div>
-
-                        {/* Floating button */}
-                        <div className="p-4 flex justify-center sm:justify-end">
-                            <button className="bg-[#2EB4B4] text-white px-6 py-3 rounded-md flex items-center gap-2 hover:bg-[#258B8B] transition-colors">
-                                Add To Patient Record
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    // Radiology Reports List View (Matches the first provided image)
-                    <div className="flex flex-col overflow-y-auto">
-                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
-                            <div>
-                                <h1 className="text-3xl font-bold text-gray-800 pb-2">Radiology Reports</h1>
-                                <p className="text-black text-md">Complete Medical History And Visit</p>
-                            </div>
-                            <button className="bg-[#2EB4B4] text-white px-4 py-2 rounded-md flex items-center gap-3 hover:bg-[#258B8B] transition-colors">
-                                <RiTempColdLine className='text-2xl' />
-                                Order Radiology Test
-                            </button>
-                        </div>
-
-                        <div className="bg-white rounded-lg shadow">
-                            <div className="flex items-center gap-2 bg-[#2EB4B4] px-4 py-3 text-white font-semibold text-lg rounded-t-lg">
-                                <IoIosFlask className="text-3xl" />
-                                Recent Radiology Reports
-                            </div>
-
-                            <div className="flex flex-col gap-4 p-4">
-                                {radiologyReports.map((report) => (
-                                    <div key={report.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-4 py-4 bg-white rounded-lg border border-gray-200">
-                                    <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-3">
-                                    <img src={report.avatar} alt="avatar" className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover" />
-                                            <div>
-                                                <div className="font-semibold text-md text-[#172B4C] flex items-center gap-2">
-                                                    {report.name}
-                                                    {report.alert && (
-                                                        <span className="text-xs px-2 py-1 bg-[#FF5B61] text-white rounded-md font-semibold">
-                                                            2 Alert
+                        {/* Existing Reports Table */}
+                        {patientReports.length > 0 && (
+                            <div className="mb-6">
+                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Existing Reports for this Patient</h3>
+                                <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                                    <table className="w-full">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Report ID</th>
+                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {patientReports.map((report) => (
+                                                <tr key={report._id} className="hover:bg-gray-50">
+                                                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                        {report.reportId}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {report.reportType}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {new Date(report.date || report.createdAt).toLocaleDateString()}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap">
+                                                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                                            report.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                            report.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                                                            report.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+                                                            'bg-red-100 text-red-800'
+                                                        }`}>
+                                                            {report.status}
                                                         </span>
-                                                    )}
-                                                </div>
-                                                <div className="text-sm text-[#172B4C]">
-                                                    {report.reportType} -- Ordered --{report.date}
-                                                </div>
-                                            </div>
-                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                                                        <button
+                                                            onClick={() => navigate(`/radiology-report/${report.reportId}`)}
+                                                            className="text-[#2EB4B4] hover:text-[#2EB4B4]/80 mr-3"
+                                                        >
+                                                            View
+                                                        </button>
+                                                        <button
+                                                            onClick={() => navigate(`/report-view/${report.reportId}`)}
+                                                            className="text-blue-600 hover:text-blue-800"
+                                                        >
+                                                            Details
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
 
-                                        <div className="flex flex-wrap gap-3 items-center justify-start sm:justify-end">
-                                        <span className={`text-sm sm:text-md px-3 py-2 rounded-md font-semibold ${getStatusClass(report.status)}`}>
-                                                {report.status}
-                                            </span>
-                                            <button className="border border-[black] text-[black] text-sm sm:text-md px-3 py-2 rounded hover:bg-gray-100 transition-colors"
-
-                                                onClick={() => handleViewReport(report)}
+                        {/* Document Pickers */}
+                        <div className="flex flex-col sm:flex-row gap-6 mb-6">
+                            {/* Image Document Picker */}
+                            <div className="flex-1">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Upload 2D Images (Reports)</label>
+                                <div 
+                                    className="bg-white rounded-lg shadow-sm p-6 border-dashed border-2 border-gray-300 text-center cursor-pointer hover:border-[#2EB4B4] transition-colors"
+                                    onClick={() => document.getElementById('imageUpload').click()}
+                                >
+                                    <input 
+                                        type="file" 
+                                        accept=".jpg,.jpeg,.png,image/jpeg,image/png" 
+                                        className="hidden" 
+                                        id="imageUpload" 
+                                        onChange={handleImageUpload}
+                                    />
+                                    <IoCloudUploadOutline className="mx-auto text-4xl text-gray-400 mb-2" />
+                                    {uploadedImage ? (
+                                        <div>
+                                            <p className="text-sm font-semibold text-[#2EB4B4] mb-1">{uploadedImage.name}</p>
+                                            <p className="text-xs text-gray-500 mb-2">Click to replace • JPG, PNG, JPEG only</p>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    removeImage();
+                                                }}
+                                                className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 mx-auto"
                                             >
-                                                View Report
+                                                <IoTrashOutline size={12} /> Remove
                                             </button>
                                         </div>
+                                    ) : (
+                                        <div>
+                                            <p className="text-sm font-semibold text-gray-700 mb-1">Click to Upload Image</p>
+                                            <p className="text-xs text-gray-500">JPG, PNG, JPEG only</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            {/* ZIP Document Picker */}
+                            <div className="flex-1">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Upload 3D DICOM Files (ZIP)</label>
+                                <div 
+                                    className="bg-white rounded-lg shadow-sm p-6 border-dashed border-2 border-gray-300 text-center cursor-pointer hover:border-[#2EB4B4] transition-colors"
+                                    onClick={() => document.getElementById('zipUpload').click()}
+                                >
+                                    <input 
+                                        type="file" 
+                                        accept=".zip,application/zip" 
+                                        className="hidden" 
+                                        id="zipUpload" 
+                                        onChange={handleZipUpload}
+                                    />
+                                    <IoCloudUploadOutline className="mx-auto text-4xl text-gray-400 mb-2" />
+                                    {uploadedZipFile ? (
+                                        <div>
+                                            <p className="text-sm font-semibold text-[#2EB4B4] mb-1">{uploadedZipFile.name}</p>
+                                            <p className="text-xs text-gray-500 mb-2">Click to replace • ZIP files only</p>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    removeZipFile();
+                                                }}
+                                                className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 mx-auto"
+                                            >
+                                                <IoTrashOutline size={12} /> Remove
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <p className="text-sm font-semibold text-gray-700 mb-1">Click to Upload ZIP</p>
+                                            <p className="text-xs text-gray-500">ZIP files only</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                       {/* Action Buttons */}
+<div className="space-y-4 mb-8">
+    {/* Download Buttons */}
+    <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <button 
+            onClick={handleAnalyze2D}
+            disabled={isAnalyzing2D || !uploadedImage || !selectedScanType}
+            className={`px-6 py-3 rounded-md flex items-center gap-2 transition-colors ${
+                isAnalyzing2D || !uploadedImage || !selectedScanType
+                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                    : 'bg-[#FF5B61] text-white hover:bg-[#E5525A]'
+            }`}
+        >
+            <IoIosFlask className="text-xl" /> 
+            {isAnalyzing2D ? 'Analyzing 2D...' : 'Analyze 2D Image'}
+        </button>
+        
+        <button 
+            onClick={handleAnalyze3D}
+            disabled={isAnalyzing3D || !uploadedZipFile || !selectedScanType}
+            className={`px-6 py-3 rounded-md flex items-center gap-2 transition-colors ${
+                isAnalyzing3D || !uploadedZipFile || !selectedScanType
+                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                    : 'bg-[#8B5CF6] text-white hover:bg-[#7C3AED]'
+            }`}
+        >
+            <IoIosFlask className="text-xl" /> 
+            {isAnalyzing3D ? 'Analyzing 3D...' : 'Analyze 3D DICOM'}
+        </button>
+    </div>
+</div>
+
+
+                        {/* Data Table */}
+                        <div className="bg-white rounded-lg shadow-sm overflow-hidden mt-8">
+                            <div className="px-6 py-4 bg-[#2EB4B4] text-white">
+                                <h3 className="text-lg font-semibold">Scan Records</h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Scan Type
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                View Original DICOM
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                View Analysed DICOM
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                View Report
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {getTableData().length === 0 ? (
+                                            <tr>
+                                                <td colSpan="4" className="px-6 py-12 text-center">
+                                                    <div className="text-gray-500">
+                                                        <IoDocumentTextOutline className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                                                        <h3 className="text-lg font-medium mb-2">No Analysis Results Yet</h3>
+                                                        <p className="text-sm">Upload medical images above to start analysis and see results here.</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            getTableData().map((scan) => (
+                                            <tr key={scan.id} className="hover:bg-gray-50">
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex flex-col">
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#2EB4B4] text-white mb-1">
+                                                            {scan.scanType}
+                                                        </span>
+                                                        {scan.fileName && (
+                                                            <span className="text-xs text-gray-500 truncate max-w-32" title={scan.fileName}>
+                                                                {scan.fileName}
+                                                            </span>
+                                                        )}
+                                                        {scan.type && (
+                                                            <span className="text-xs text-gray-400">
+                                                                {scan.type} Analysis
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {scan.scanType === 'DICOM' ? (
+                                                        scan.originalDicom === 'available' ? (
+                                                            <button 
+                                                                onClick={() => handleViewImage(
+                                                                    scan.scanRecord?._id || scan.id, 
+                                                                    scan.fileName,
+                                                                    'original'
+                                                                )}
+                                                                className="inline-flex items-center px-3 py-1 rounded-md text-sm bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                                                            >
+                                                                <IoEyeOutline className="mr-1" /> View
+                                                            </button>
+                                                        ) : scan.isSample ? (
+                                                            <span className="text-gray-400 text-sm">Upload files to analyze</span>
+                                                        ) : (
+                                                            <span className="text-gray-400 text-sm">Not Available</span>
+                                                        )
+                                                    ) : scan.scanType === 'Report' ? (
+                                                        scan.originalDicom === 'available' ? (
+                                                            <button 
+                                                                onClick={() => handleViewImage(
+                                                                    scan.scanRecord?._id || scan.id, 
+                                                                    scan.fileName,
+                                                                    'original',
+                                                                    'professional'
+                                                                )}
+                                                                className="inline-flex items-center px-3 py-1 rounded-md text-sm bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                                                                title="Professional Medical Viewer"
+                                                            >
+                                                                <IoEyeOutline className="mr-1" /> View Medical Images
+                                                            </button>
+                                                        ) : scan.isSample ? (
+                                                            <span className="text-gray-400 text-sm">Upload files to analyze</span>
+                                                        ) : (
+                                                            <span className="text-gray-400 text-sm">Not Available</span>
+                                                        )
+                                                    ) : (
+                                                        <span className="text-gray-400 text-sm">-</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {scan.scanType === 'DICOM' ? (
+                                                        scan.analysedDicom === 'available' ? (
+                                                            <button 
+                                                                onClick={() => handleViewImage(
+                                                                    scan.scanRecord?._id || scan.id, 
+                                                                    scan.fileName,
+                                                                    'analyzed',
+                                                                    'professional'
+                                                                )}
+                                                                className="inline-flex items-center px-3 py-1 rounded-md text-sm bg-green-100 text-green-800 hover:bg-green-200 transition-colors"
+                                                                title="View Processed Medical Images"
+                                                            >
+                                                                <IoEyeOutline className="mr-1" /> View Processed Images
+                                                            </button>
+                                                        ) : scan.analysedDicom === 'processing' ? (
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                                Processing
+                                                            </span>
+                                                        ) : scan.analysedDicom === 'failed' ? (
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                                Failed
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-gray-400 text-sm">Pending</span>
+                                                        )
+                                                    ) : (
+                                                        <span className="text-gray-400 text-sm">-</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {scan.scanType === 'Report' ? (
+                                                        scan.report === 'available' ? (
+                                                            <div className="flex gap-2">
+                                                                <button 
+                                                                    onClick={() => handleViewResult(scan.result)}
+                                                                    className="inline-flex items-center px-3 py-1 rounded-md text-sm bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors"
+                                                                >
+                                                                    <IoDocumentTextOutline className="mr-1" /> View Report
+                                                                </button>
+                                                            </div>
+                                                        ) : scan.report === 'pending' ? (
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                                                Pending
+                                                            </span>
+                                                        ) : scan.report === 'failed' ? (
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                                Failed
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-gray-400 text-sm">Not Available</span>
+                                                        )
+                                                    ) : scan.scanType === 'DICOM' ? (
+                                                        scan.report === 'available' ? (
+                                                            <div className="flex gap-2">
+                                                                <button 
+                                                                    onClick={() => handleViewResult(scan.result)}
+                                                                    className="inline-flex items-center px-3 py-1 rounded-md text-sm bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors"
+                                                                >
+                                                                    <IoDocumentTextOutline className="mr-1" /> View Report
+                                                                </button>
+                                                            </div>
+                                                        ) : scan.report === 'pending' ? (
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                                                Pending
+                                                            </span>
+                                                        ) : scan.report === 'failed' ? (
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                                Failed
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-gray-400 text-sm">Not Available</span>
+                                                        )
+                                                    ) : (
+                                                        <span className="text-gray-400 text-sm">-</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        )))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                
+                {/* Result Modal */}
+                {showResultModal && selectedResult && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                            <div className="flex justify-between items-center p-6 border-b">
+                                <h2 className="text-xl font-semibold text-gray-800">
+                                    Analysis Result - {selectedResult.fileName}
+                                </h2>
+                                <button 
+                                    onClick={closeResultModal}
+                                    className="text-gray-500 hover:text-gray-700 text-2xl"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                            
+                            <div className="p-6">
+                                {(selectedResult.type === '2D' || selectedResult.fileType === '2D') && 
+                                 (selectedResult.data || selectedResult.analysisResult) && 
+                                 selectedResult.status === 'completed' ? (
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="bg-gray-50 p-4 rounded-lg">
+                                                <h3 className="font-semibold text-gray-800 mb-2">Modality</h3>
+                                                <p className="text-gray-700">
+                                                    {selectedResult.data?.modality || 
+                                                     selectedResult.analysisResult?.modality || 
+                                                     'Not available'}
+                                                </p>
+                                            </div>
+                                            <div className="bg-gray-50 p-4 rounded-lg">
+                                                <h3 className="font-semibold text-gray-800 mb-2">Urgency</h3>
+                                                <span className={`px-2 py-1 rounded-full text-sm font-medium ${
+                                                    (selectedResult.data?.urgency || selectedResult.analysisResult?.urgency) === 'Emergency' ? 'bg-red-100 text-red-800' :
+                                                    (selectedResult.data?.urgency || selectedResult.analysisResult?.urgency) === 'Priority' ? 'bg-yellow-100 text-yellow-800' :
+                                                    'bg-green-100 text-green-800'
+                                                }`}>
+                                                    {selectedResult.data?.urgency || 
+                                                     selectedResult.analysisResult?.urgency || 
+                                                     'Normal'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                            <h3 className="font-semibold text-gray-800 mb-2">Findings</h3>
+                                            <p className="text-gray-700 whitespace-pre-wrap">
+                                                {selectedResult.data?.findings || 
+                                                 selectedResult.analysisResult?.findings || 
+                                                 'No findings available'}
+                                            </p>
+                                        </div>
+                                        
+                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                            <h3 className="font-semibold text-gray-800 mb-2">Diagnosis</h3>
+                                            <p className="text-gray-700 whitespace-pre-wrap">
+                                                {selectedResult.data?.diagnosis || 
+                                                 selectedResult.analysisResult?.diagnosis || 
+                                                 'No diagnosis available'}
+                                            </p>
+                                        </div>
+                                        
+                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                            <h3 className="font-semibold text-gray-800 mb-2">Treatment Plan</h3>
+                                            <p className="text-gray-700 whitespace-pre-wrap">
+                                                {selectedResult.data?.treatment_plan || 
+                                                 selectedResult.analysisResult?.treatmentPlan || 
+                                                 'No treatment plan available'}
+                                            </p>
+                                        </div>
+                                        
+                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                            <h3 className="font-semibold text-gray-800 mb-2">Confidence Summary</h3>
+                                            <p className="text-gray-700 whitespace-pre-wrap">
+                                                {selectedResult.data?.confidence_summary || 
+                                                 selectedResult.analysisResult?.confidenceSummary || 
+                                                 'No confidence summary available'}
+                                            </p>
+                                        </div>
+                                        
+                                        {(selectedResult.data?.limitations || selectedResult.analysisResult?.limitations) && (
+                                            <div className="bg-gray-50 p-4 rounded-lg">
+                                                <h3 className="font-semibold text-gray-800 mb-2">Limitations</h3>
+                                                <p className="text-gray-700 whitespace-pre-wrap">
+                                                    {selectedResult.data?.limitations || 
+                                                     selectedResult.analysisResult?.limitations}
+                                                </p>
+                                            </div>
+                                        )}
+                                        
                                     </div>
-                                ))}
+                                ) : selectedResult.type === '3D' ? (
+                                    <div className="space-y-4">
+                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                            <h3 className="font-semibold text-gray-800 mb-2">Job Status</h3>
+                                            <p className="text-gray-700">
+                                                Job ID: {selectedResult.jobId}<br/>
+                                                Status: {selectedResult.status || 'Processing'}<br/>
+                                                Type: 3D DICOM Analysis
+                                            </p>
+                                        </div>
+                                        
+                                        {selectedResult.statusData && (
+                                            <div className="bg-gray-50 p-4 rounded-lg">
+                                                <h3 className="font-semibold text-gray-800 mb-2">Status Details</h3>
+                                                <pre className="text-sm text-gray-600 whitespace-pre-wrap overflow-x-auto">
+                                                    {JSON.stringify(selectedResult.statusData, null, 2)}
+                                                </pre>
+                                            </div>
+                                        )}
+                                        
+                                        {selectedResult.status === 'completed' && (
+                                            <div className="bg-green-50 p-4 rounded-lg">
+                                                <h3 className="font-semibold text-green-800 mb-2">Analysis Complete</h3>
+                                                <p className="text-green-700 mb-3">Your 3D DICOM analysis has been completed successfully.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : selectedResult.status === 'processing' ? (
+                                    <div className="text-center py-8">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2EB4B4] mx-auto mb-4"></div>
+                                        <p className="text-gray-600">Analysis in progress...</p>
+                                        <p className="text-sm text-gray-500 mt-2">Please wait while we process your {selectedResult.type || selectedResult.fileType} scan</p>
+                                    </div>
+                                ) : selectedResult.status === 'failed' ? (
+                                    <div className="text-center py-8">
+                                        <div className="text-red-500 text-4xl mb-4">⚠️</div>
+                                        <p className="text-red-600 font-semibold">Analysis Failed</p>
+                                        <p className="text-sm text-gray-500 mt-2">
+                                            {selectedResult.error || 'The analysis could not be completed. Please try uploading the file again.'}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <div className="text-gray-400 text-4xl mb-4">📊</div>
+                                        <p className="text-gray-600">Analysis not yet available</p>
+                                        <p className="text-sm text-gray-500 mt-2">
+                                            {selectedResult.status === 'pending' ? 
+                                                'Analysis has not been started yet' : 
+                                                'No analysis data available for this scan'}
+                                        </p>
+                                    </div>
+                                )}
+                                
+                                {selectedResult.error && (
+                                    <div className="bg-red-50 p-4 rounded-lg mt-4">
+                                        <h3 className="font-semibold text-red-800 mb-2">Error</h3>
+                                        <p className="text-red-700">{selectedResult.error}</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
+                )}
+
+                {/* Image Viewing Modal */}
+                {showImageModal && selectedImage && (
+                    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg max-w-6xl w-full max-h-[95vh] overflow-hidden">
+                            <div className="flex justify-between items-center p-4 border-b">
+                                <h2 className="text-xl font-semibold">
+                                    {selectedImage.fileName} ({selectedImage.fileType})
+                                </h2>
+                                <button 
+                                    onClick={() => setShowImageModal(false)}
+                                    className="text-gray-500 hover:text-gray-700 text-2xl"
+                                >
+                                    <IoCloseOutline />
+                                </button>
+                            </div>
+                            <div className="p-4 flex justify-center items-center bg-gray-50" style={{maxHeight: 'calc(95vh - 80px)'}}>
+                                <img 
+                                    src={selectedImage.url} 
+                                    alt={selectedImage.fileName}
+                                    className="max-w-full max-h-full object-contain cursor-zoom-in"
+                                    style={{maxHeight: 'calc(95vh - 120px)'}}
+                                    onClick={(e) => {
+                                        if (e.target.style.transform === 'scale(2)') {
+                                            e.target.style.transform = 'scale(1)';
+                                            e.target.style.cursor = 'zoom-in';
+                                        } else {
+                                            e.target.style.transform = 'scale(2)';
+                                            e.target.style.cursor = 'zoom-out';
+                                        }
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Enhanced 3D Viewer */}
+                {show3DViewer && selectedImage && (
+                    <>
+                        {viewerType === 'professional' ? (
+                            <ProfessionalDICOMViewer
+                                dicomUrl={selectedImage.url}
+                                fileName={selectedImage.fileName}
+                                fileType={selectedImage.fileType}
+                                onClose={close3DViewer}
+                            />
+                        ) : (
+                            <Enhanced3DViewer
+                                dicomUrl={selectedImage.url}
+                                fileName={selectedImage.fileName}
+                                fileType={selectedImage.fileType}
+                                onClose={close3DViewer}
+                            />
+                        )}
+                    </>
                 )}
             </div>
         </SidebarLayout>
     );
 };
 
-export default RadiologyDashboard;
+export default RadiologyReportDetail;
