@@ -742,7 +742,34 @@ const RadiologyReportDetail = () => {
     return (
         <SidebarLayout isOpen={isOpen}>
             <Navbar toggleSidebar={toggleSidebar} user={user} logout={logout} />
-            <div className="h-[calc(100vh_-_96px)] bg-[#DCE1EE] p-4 sm:p-6 md:p-8 font-sans overflow-y-auto relative pb-20">
+            <div className={`h-[calc(100vh_-_96px)] bg-[#F8FAFC] font-sans overflow-y-auto relative pb-20 ${show3DViewer ? 'p-1' : 'p-4 sm:p-6 md:p-8'}`}>
+                {/* Enhanced 3D Viewer - Replaces main content */}
+                {show3DViewer && selectedImage ? (
+                    <div className="bg-white rounded-lg shadow-lg p-0 h-[calc(100vh_-_110px)]">
+                        {/* Viewer content */}
+                        <div className="relative h-full">
+                            {viewerType === 'professional' ? (
+                                <ProfessionalDICOMViewer
+                                    dicomUrl={selectedImage.url}
+                                    fileName={selectedImage.fileName}
+                                    fileType={selectedImage.fileType}
+                                    onClose={close3DViewer}
+                                    isIntegrated={true}
+                                />
+                            ) : (
+                                <Enhanced3DViewer
+                                    dicomUrl={selectedImage.url}
+                                    fileName={selectedImage.fileName}
+                                    fileType={selectedImage.fileType}
+                                    onClose={close3DViewer}
+                                    isIntegrated={true}
+                                />
+                            )}
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        {/* Original reports content - only show when viewer is not active */}
 
                 {/* Report Detail - 2D Analysis Section */}
                 <div className="flex flex-col">
@@ -750,7 +777,7 @@ const RadiologyReportDetail = () => {
                         <div className="">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                                 <div>
-                                    <h2 className="text-2xl font-bold text-[#2EB4B4] mb-2">
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">
                                         {patientData?.name || dummyReport.patient?.name || "Loading..."}
                                     </h2>
                                     <p className="text-black text-md">
@@ -764,7 +791,7 @@ const RadiologyReportDetail = () => {
                                         <select 
                                             value={selectedScanType}
                                             onChange={handleScanTypeChange}
-                                            className="w-48 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2EB4B4] focus:border-transparent"
+                                            className="w-48 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent"
                                         >
                                             <option value="">Select Type</option>
                                             <option value="Report">Report</option>
@@ -842,7 +869,7 @@ const RadiologyReportDetail = () => {
                             <div className="flex-1">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Upload 2D Images (Reports)</label>
                                 <div 
-                                    className="bg-white rounded-lg shadow-sm p-6 border-dashed border-2 border-gray-300 text-center cursor-pointer hover:border-[#2EB4B4] transition-colors"
+                                    className="bg-white rounded-lg shadow-sm p-6 border-dashed border-2 border-gray-300 text-center cursor-pointer hover:border-gray-400 transition-colors"
                                     onClick={() => document.getElementById('imageUpload').click()}
                                 >
                                     <input 
@@ -880,7 +907,7 @@ const RadiologyReportDetail = () => {
                             <div className="flex-1">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Upload 3D DICOM Files (ZIP)</label>
                                 <div 
-                                    className="bg-white rounded-lg shadow-sm p-6 border-dashed border-2 border-gray-300 text-center cursor-pointer hover:border-[#2EB4B4] transition-colors"
+                                    className="bg-white rounded-lg shadow-sm p-6 border-dashed border-2 border-gray-300 text-center cursor-pointer hover:border-gray-400 transition-colors"
                                     onClick={() => document.getElementById('zipUpload').click()}
                                 >
                                     <input 
@@ -924,8 +951,8 @@ const RadiologyReportDetail = () => {
             disabled={isAnalyzing2D || !uploadedImage || !selectedScanType}
             className={`px-6 py-3 rounded-md flex items-center gap-2 transition-colors ${
                 isAnalyzing2D || !uploadedImage || !selectedScanType
-                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                    : 'bg-[#FF5B61] text-white hover:bg-[#E5525A]'
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-200'
+                    : 'bg-[#FAFAFA] text-[#172B4C] border border-gray-200 hover:bg-gray-100'
             }`}
         >
             <IoIosFlask className="text-xl" /> 
@@ -937,8 +964,8 @@ const RadiologyReportDetail = () => {
             disabled={isAnalyzing3D || !uploadedZipFile || !selectedScanType}
             className={`px-6 py-3 rounded-md flex items-center gap-2 transition-colors ${
                 isAnalyzing3D || !uploadedZipFile || !selectedScanType
-                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                    : 'bg-[#8B5CF6] text-white hover:bg-[#7C3AED]'
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-200'
+                    : 'bg-[#FAFAFA] text-[#172B4C] border border-gray-200 hover:bg-gray-100'
             }`}
         >
             <IoIosFlask className="text-xl" /> 
@@ -950,7 +977,7 @@ const RadiologyReportDetail = () => {
 
                         {/* Data Table */}
                         <div className="bg-white rounded-lg shadow-sm overflow-hidden mt-8">
-                            <div className="px-6 py-4 bg-[#2EB4B4] text-white">
+                            <div className="px-6 py-4 bg-[#FAFAFA] text-[#172B4C]">
                                 <h3 className="text-lg font-semibold">Scan Records</h3>
                             </div>
                             <div className="overflow-x-auto">
@@ -987,7 +1014,7 @@ const RadiologyReportDetail = () => {
                                             <tr key={scan.id} className="hover:bg-gray-50">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex flex-col">
-                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#2EB4B4] text-white mb-1">
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#FAFAFA] text-[#172B4C] border border-gray-200 mb-1">
                                                             {scan.scanType}
                                                         </span>
                                                         {scan.fileName && (
@@ -1011,7 +1038,7 @@ const RadiologyReportDetail = () => {
                                                                     scan.fileName,
                                                                     'original'
                                                                 )}
-                                                                className="inline-flex items-center px-3 py-1 rounded-md text-sm bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                                                                className="inline-flex items-center px-3 py-1 rounded-md text-sm border border-[black] text-[black] hover:bg-gray-100 transition-colors"
                                                             >
                                                                 <IoEyeOutline className="mr-1" /> View
                                                             </button>
@@ -1029,7 +1056,7 @@ const RadiologyReportDetail = () => {
                                                                     'original',
                                                                     'professional'
                                                                 )}
-                                                                className="inline-flex items-center px-3 py-1 rounded-md text-sm bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                                                                className="inline-flex items-center px-3 py-1 rounded-md text-sm border border-[black] text-[black] hover:bg-gray-100 transition-colors"
                                                                 title="Professional Medical Viewer"
                                                             >
                                                                 <IoEyeOutline className="mr-1" /> View Medical Images
@@ -1053,7 +1080,7 @@ const RadiologyReportDetail = () => {
                                                                     'analyzed',
                                                                     'professional'
                                                                 )}
-                                                                className="inline-flex items-center px-3 py-1 rounded-md text-sm bg-green-100 text-green-800 hover:bg-green-200 transition-colors"
+                                                                className="inline-flex items-center px-3 py-1 rounded-md text-sm border border-[black] text-[black] hover:bg-gray-100 transition-colors"
                                                                 title="View Processed Medical Images"
                                                             >
                                                                 <IoEyeOutline className="mr-1" /> View Processed Images
@@ -1079,7 +1106,7 @@ const RadiologyReportDetail = () => {
                                                             <div className="flex gap-2">
                                                                 <button 
                                                                     onClick={() => handleViewResult(scan.result)}
-                                                                    className="inline-flex items-center px-3 py-1 rounded-md text-sm bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors"
+                                                                    className="inline-flex items-center px-3 py-1 rounded-md text-sm border border-[black] text-[black] hover:bg-gray-100 transition-colors"
                                                                 >
                                                                     <IoDocumentTextOutline className="mr-1" /> View Report
                                                                 </button>
@@ -1100,7 +1127,7 @@ const RadiologyReportDetail = () => {
                                                             <div className="flex gap-2">
                                                                 <button 
                                                                     onClick={() => handleViewResult(scan.result)}
-                                                                    className="inline-flex items-center px-3 py-1 rounded-md text-sm bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors"
+                                                                    className="inline-flex items-center px-3 py-1 rounded-md text-sm border border-[black] text-[black] hover:bg-gray-100 transition-colors"
                                                                 >
                                                                     <IoDocumentTextOutline className="mr-1" /> View Report
                                                                 </button>
@@ -1320,25 +1347,6 @@ const RadiologyReportDetail = () => {
                         </div>
                     </div>
                 )}
-
-                {/* Enhanced 3D Viewer */}
-                {show3DViewer && selectedImage && (
-                    <>
-                        {viewerType === 'professional' ? (
-                            <ProfessionalDICOMViewer
-                                dicomUrl={selectedImage.url}
-                                fileName={selectedImage.fileName}
-                                fileType={selectedImage.fileType}
-                                onClose={close3DViewer}
-                            />
-                        ) : (
-                            <Enhanced3DViewer
-                                dicomUrl={selectedImage.url}
-                                fileName={selectedImage.fileName}
-                                fileType={selectedImage.fileType}
-                                onClose={close3DViewer}
-                            />
-                        )}
                     </>
                 )}
             </div>

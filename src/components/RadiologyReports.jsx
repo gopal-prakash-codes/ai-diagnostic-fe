@@ -11,7 +11,7 @@ import { toast } from 'react-toastify';
 const getStatusClass = (status) => {
   switch (status) {
     case 'Completed':
-      return 'bg-[#2EB4B4] text-white';
+      return 'bg-[#FAFAFA] text-[#172B4C] border border-gray-200';
     case 'In Progress':
       return 'bg-[#FFC658] text-[#7E653A]';
     default:
@@ -47,7 +47,7 @@ const RadiologyReports = () => {
               status: 'Completed', // Default status
               date: new Date(patient.createdAt).toLocaleDateString(),
               reportType: 'Medical Report',
-              avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(patient.name || 'Unknown')}&background=2EB4B4&color=ffffff`,
+              avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(patient.name || 'Unknown')}&background=FAFAFA&color=172B4C`,
               alert: false,
               patientData: patient
             };
@@ -73,7 +73,7 @@ const RadiologyReports = () => {
     return (
       <SidebarLayout isOpen={isOpen}>
         <Navbar toggleSidebar={toggleSidebar} user={user} logout={logout} />
-        <div className="h-[calc(100vh_-_96px)] bg-[#DCE1EE] p-4 sm:p-6 md:p-8 font-sans overflow-y-auto flex items-center justify-center">
+        <div className="h-[calc(100vh_-_96px)] bg-[#F8FAFC] p-4 sm:p-6 md:p-8 font-sans overflow-y-auto flex items-center justify-center">
           <div className="text-center">
             <svg className="animate-spin -ml-1 mr-3 h-8 w-8 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -90,13 +90,13 @@ const RadiologyReports = () => {
     return (
       <SidebarLayout isOpen={isOpen}>
         <Navbar toggleSidebar={toggleSidebar} user={user} logout={logout} />
-        <div className="h-[calc(100vh_-_96px)] bg-[#DCE1EE] p-4 sm:p-6 md:p-8 font-sans overflow-y-auto flex items-center justify-center">
+        <div className="h-[calc(100vh_-_96px)] bg-[#F8FAFC] p-4 sm:p-6 md:p-8 font-sans overflow-y-auto flex items-center justify-center">
           <div className="text-center">
             <div className="text-red-500 text-xl mb-4">⚠️</div>
             <p className="text-gray-600">Error loading radiology reports: {error}</p>
             <button 
               onClick={() => window.location.reload()} 
-              className="mt-4 bg-[#2EB4B4] text-white px-4 py-2 rounded-md hover:bg-[#258B8B] transition-colors"
+              className="mt-4 bg-[#6B7280] text-white px-4 py-2 rounded-md hover:bg-[#4B5563] transition-colors"
             >
               Retry
             </button>
@@ -110,7 +110,7 @@ const RadiologyReports = () => {
     <SidebarLayout isOpen={isOpen}>
       <Navbar toggleSidebar={toggleSidebar} user={user} logout={logout} />
 
-      <div className="h-[calc(100vh_-_96px)] bg-[#DCE1EE] p-4 sm:p-6 md:p-8 font-sans overflow-y-auto">
+      <div className="h-[calc(100vh_-_96px)] bg-[#F8FAFC] p-4 sm:p-6 md:p-8 font-sans overflow-y-auto">
         <div className="flex flex-col overflow-y-auto">
           {/* Header */}
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
@@ -118,7 +118,7 @@ const RadiologyReports = () => {
               <h1 className="text-3xl font-bold text-gray-800 pb-2">Radiology Reports</h1>
               <p className="text-black text-md">Complete Medical History And Visit</p>
             </div>
-            <button className="bg-[#2EB4B4] text-white px-4 py-2 rounded-md flex items-center gap-3 hover:bg-[#258B8B] transition-colors">
+            <button className="bg-[#FAFAFA] text-[#172B4C] px-4 py-2 rounded-md flex items-center gap-3 border border-gray-200 hover:bg-gray-100 transition-colors">
               <RiTempColdLine className='text-2xl' />
               Order Radiology Test
             </button>
@@ -126,13 +126,13 @@ const RadiologyReports = () => {
 
           {/* Reports Card */}
           <div className="bg-white rounded-lg shadow">
-            <div className="flex items-center gap-2 bg-[#2EB4B4] px-4 py-3 text-white font-semibold text-lg rounded-t-lg">
+            <div className="flex items-center gap-2 bg-[#FAFAFA] px-4 py-3 text-[#172B4C] font-semibold text-lg rounded-t-lg">
               <IoIosFlask className="text-3xl" />
               Recent Radiology Reports ({reports.length})
             </div>
 
             {/* List */}
-            <div className="flex flex-col gap-4 p-4">
+            <div className="flex flex-col gap-4 p-4 max-h-[36rem] overflow-y-auto">
               {reports.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <IoIosFlask className="text-4xl mx-auto mb-4 opacity-50" />

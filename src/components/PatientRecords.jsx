@@ -129,7 +129,7 @@ const PatientRecords = () => {
     <SidebarLayout isOpen={isOpen}>
       <Navbar toggleSidebar={toggleSidebar} user={user} logout={logout} />
 
-      <div className="h-[calc(100vh_-_96px)] bg-[#DCE1EE] p-4 sm:p-6 md:p-8 font-sans overflow-y-auto">
+      <div className="h-[calc(100vh_-_96px)] bg-[#F8FAFC] p-4 sm:p-6 md:p-8 font-sans overflow-y-auto">
         <div className="flex flex-col gap-6">
           {/* Header */}
 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
@@ -139,7 +139,7 @@ const PatientRecords = () => {
             </div>
             <button 
               onClick={() => setShowCreatePatient(true)}
-  className="w-full sm:w-auto bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 transition-colors"
+  className="w-full sm:w-auto bg-[#FAFAFA] text-[#172B4C] px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-100 transition-colors"
             >
               + New Record
             </button>
@@ -148,7 +148,7 @@ const PatientRecords = () => {
           {/* Patient Records Card */}
           <div className="bg-white rounded-lg shadow">
             {/* Card Header */}
-            <div className="bg-teal-500 px-4 py-3 text-white font-semibold text-lg rounded-t-lg flex items-center justify-between">
+            <div className="bg-[#FAFAFA] px-4 py-3 text-[#172B4C] font-semibold text-lg rounded-t-lg flex items-center justify-between">
               <span>Patient Records</span>
               <span className="text-sm font-normal opacity-90">
                 {loading ? 'Loading...' : `${patients.length} patients`}
@@ -159,7 +159,7 @@ const PatientRecords = () => {
             <div className="flex flex-col gap-4 p-4 max-h-[36rem] overflow-y-auto">
               {loading ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div>
                   <span className="ml-3 text-gray-600">Loading patient records...</span>
                 </div>
               ) : patients.length === 0 ? (
@@ -186,7 +186,7 @@ const PatientRecords = () => {
                           className="w-10 h-10 rounded-full"
                           onError={(e) => {
                             // Fallback if image fails to load
-                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(patient.name)}&background=0d9488&color=fff`;
+                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(patient.name)}&background=FAFAFA&color=172B4C`;
                           }}
                         />
                         <div>
@@ -203,7 +203,7 @@ const PatientRecords = () => {
                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
                         <button 
                           onClick={() => handleViewRecord(patient)}
-                          className="border border-gray-300 text-gray-700 text-sm px-3 py-1 rounded hover:bg-gray-100 transition-colors"
+                          className="border border-[black] text-[black] text-sm px-3 py-1 rounded hover:bg-gray-100 transition-colors"
                         >
                           View Record
                         </button>

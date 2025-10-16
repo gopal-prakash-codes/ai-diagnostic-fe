@@ -25,7 +25,7 @@ export default function Navbar({ toggleSidebar, user, logout }) {
           <div>
             <button
               onClick={toggleSidebar}
-              className="text-gray-600 hover:bg-gray-100 rounded-md p-2"
+              className="text-gray-700 hover:bg-gray-100 rounded-md p-2 border border-gray-200"
             >
               <HiMenuAlt2 className="text-2xl sm:text-3xl" />
             </button>
@@ -34,14 +34,14 @@ export default function Navbar({ toggleSidebar, user, logout }) {
           {/* Right side */}
           <div className="flex items-center space-x-2 sm:space-x-4">
             {/* Ask AI Anything */}
-            <Button className="hidden sm:flex bg-gradient-to-r from-green-400 to-blue-500 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-full items-center gap-1.5 sm:gap-2 text-sm sm:text-base">
+            <Button className="hidden sm:flex bg-[#FAFAFA] text-[#172B4C] border border-gray-200 hover:bg-gray-100 px-3 sm:px-4 py-1.5 sm:py-2 rounded-md items-center gap-1.5 sm:gap-2 text-sm sm:text-base">
               <IoMicOutline className="w-4 h-4" />
               Ask AI Anything
             </Button>
 
             {/* Notifications */}
             <div className="relative">
-              <button className="p-2 bg-gray-100 rounded-full hover:bg-gray-200">
+              <button className="p-2 bg-[#FAFAFA] border border-gray-200 rounded-md hover:bg-gray-100">
                 <IoNotificationsOutline className="w-5 sm:w-6 h-5 sm:h-6 text-gray-700" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
@@ -51,7 +51,7 @@ export default function Navbar({ toggleSidebar, user, logout }) {
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-1 sm:gap-2 focus:outline-none"
+                className="flex items-center gap-1 sm:gap-2 focus:outline-none bg-[#FAFAFA] border border-gray-200 rounded-md px-2 py-1 hover:bg-gray-100"
               >
                 <img
                   src={userImg}
@@ -65,7 +65,7 @@ export default function Navbar({ toggleSidebar, user, logout }) {
               </button>
 
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-40 bg-white border rounded-md shadow-lg z-50">
+                <div className="absolute right-0 mt-2 w-44 bg-white border rounded-md shadow-lg z-50">
                   <button
                     onClick={handleLogout}
                     className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

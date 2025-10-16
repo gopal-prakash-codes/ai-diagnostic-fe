@@ -265,7 +265,7 @@ function ScheduleVisit() {
     return (
       <SidebarLayout isOpen={isOpen}>
         <Navbar toggleSidebar={toggleSidebar} user={user} logout={logout} />
-        <div className="h-[calc(100vh_-_96px)] bg-[#DCE1EE] p-4 sm:p-6 md:p-8 font-sans overflow-y-auto">
+        <div className="h-[calc(100vh_-_96px)] bg-[#F8FAFC] p-4 sm:p-6 md:p-8 font-sans overflow-y-auto">
           <div className="min-h-screen bg-gray-50 flex items-center justify-center">
             <p className="text-gray-500">Loading patient data...</p>
           </div>
@@ -386,13 +386,13 @@ function ScheduleVisit() {
     <SidebarLayout isOpen={isOpen}>
       <Navbar toggleSidebar={toggleSidebar} user={user} logout={logout} />
       
-      <div className="h-[calc(100vh_-_96px)] bg-[#DCE1EE] p-4 sm:p-6 md:p-8 font-sans overflow-y-auto">
+      <div className="h-[calc(100vh_-_96px)] bg-[#F8FAFC] p-4 sm:p-6 md:p-8 font-sans overflow-y-auto">
         <div className="flex flex-col gap-6">
           {/* Patient Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 rounded-full bg-indigo-500 flex items-center justify-center">
-                <span className="text-white text-lg font-bold">
+              <div className="w-12 h-12 rounded-full bg-[#FAFAFA] flex items-center justify-center border border-gray-200">
+                <span className="text-[#172B4C] text-lg font-bold">
                   {getInitials(patient.name)}
                 </span>
               </div>
@@ -408,7 +408,7 @@ function ScheduleVisit() {
             <div className="flex items-center space-x-2">
               {!isRecording ? (
                 <Button 
-                  className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+                  className="bg-[#FAFAFA] text-[#172B4C] border border-gray-200 hover:bg-gray-100 px-4 py-2 rounded-lg flex items-center space-x-2"
                   onClick={() => setIsRecording(true)}
                 >
                   <Mic className="w-4 h-4" />
@@ -433,7 +433,7 @@ function ScheduleVisit() {
               )}
               {!isRecording && conversation && (
                 <Button 
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
+                  className="bg-[#FAFAFA] text-[#172B4C] border border-gray-200 hover:bg-gray-100 px-4 py-2 rounded-lg"
                   onClick={handleSendForDiagnosis}
                   disabled={isAnalyzing}
                 >
@@ -446,10 +446,10 @@ function ScheduleVisit() {
           {/* Patient Information and Allergies */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card className="bg-white border border-gray-200 rounded-xl shadow-sm">
-              <CardHeader className="bg-teal-500 px-4 py-3 rounded-t-xl">
+              <CardHeader className="bg-[#FAFAFA] px-4 py-3 rounded-t-xl">
                 <div className="flex items-center space-x-2">
-                  <User className="w-4 h-4 text-white" />
-                  <span className="text-white font-semibold text-sm">Patient Information</span>
+                  <User className="w-4 h-4 text-[#172B4C]" />
+                  <span className="text-[#172B4C] font-semibold text-sm">Patient Information</span>
                 </div>
               </CardHeader>
               <CardContent className="p-4">
@@ -471,10 +471,10 @@ function ScheduleVisit() {
             </Card>
 
             <Card className="bg-white border border-gray-200 rounded-xl shadow-sm">
-              <CardHeader className="bg-teal-500 px-4 py-3 rounded-t-xl">
+              <CardHeader className="bg-[#FAFAFA] px-4 py-3 rounded-t-xl">
                 <div className="flex items-center space-x-2">
-                  <AlertTriangle className="w-4 h-4 text-white" />
-                  <span className="text-white font-semibold text-sm">Allergies</span>
+                  <AlertTriangle className="w-4 h-4 text-[#172B4C]" />
+                  <span className="text-[#172B4C] font-semibold text-sm">Allergies</span>
                 </div>
               </CardHeader>
               <CardContent className="p-4">
@@ -486,7 +486,7 @@ function ScheduleVisit() {
                     <div className="space-y-1 w-full">
                       {diagnosis.allergies.map((allergy, idx) => (
                         <div key={idx} className="flex items-center">
-                          <div className="w-4 h-4 bg-teal-500 rounded-full flex items-center justify-center mr-3">
+                          <div className="w-4 h-4 bg-gray-400 rounded-full flex items-center justify-center mr-3">
                             <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
@@ -507,10 +507,10 @@ function ScheduleVisit() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Transcription */}
             <Card className="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col w-full h-96">
-              <CardHeader className="bg-teal-500 px-4 py-3 rounded-t-xl">
+              <CardHeader className="bg-[#FAFAFA] px-4 py-3 rounded-t-xl">
                 <div className="flex items-center space-x-2">
-                  <Mic className="w-5 h-5 text-white" />
-                  <span className="text-white font-semibold text-base">Transcription</span>
+                  <Mic className="w-5 h-5 text-[#172B4C]" />
+                  <span className="text-[#172B4C] font-semibold text-base">Transcription</span>
                 </div>
               </CardHeader>
               <CardContent className="p-4 flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -524,10 +524,10 @@ function ScheduleVisit() {
 
             {/* Diagnosis & Next Steps */}
             <Card className="bg-white border border-gray-200 rounded-xl shadow-sm">
-              <CardHeader className="bg-teal-500 px-4 py-3 rounded-t-xl">
+              <CardHeader className="bg-[#FAFAFA] px-4 py-3 rounded-t-xl">
                 <div className="flex items-center space-x-2">
-                  <ActivityIcon className="w-5 h-5 text-white" />
-                  <span className="text-white font-semibold text-base">Diagnosis & Next Steps</span>
+                  <ActivityIcon className="w-5 h-5 text-[#172B4C]" />
+                  <span className="text-[#172B4C] font-semibold text-base">Diagnosis & Next Steps</span>
                 </div>
               </CardHeader>
               <CardContent className="p-4 space-y-4">
@@ -540,7 +540,7 @@ function ScheduleVisit() {
                       <div className="space-y-1">
                         {diagnosis.symptoms.map((symptom, idx) => (
                           <div key={idx} className="flex items-center">
-                            <div className="w-4 h-4 bg-teal-500 rounded-full flex items-center justify-center mr-3">
+                            <div className="w-4 h-4 bg-gray-400 rounded-full flex items-center justify-center mr-3">
                               <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                               </svg>
@@ -565,7 +565,7 @@ function ScheduleVisit() {
                         {diagnosis.diagnosisData.map((diagItem, idx) => (
                           <div key={idx} className="flex items-center justify-between">
                             <div className="flex items-center">
-                              <div className="w-4 h-4 bg-teal-500 rounded-full flex items-center justify-center mr-3">
+                              <div className="w-4 h-4 bg-gray-400 rounded-full flex items-center justify-center mr-3">
                                 <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                 </svg>
@@ -579,7 +579,7 @@ function ScheduleVisit() {
                     ) : diagnosis?.diagnosis ? (
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
-                          <div className="w-4 h-4 bg-teal-500 rounded-full flex items-center justify-center mr-3">
+                          <div className="w-4 h-4 bg-gray-400 rounded-full flex items-center justify-center mr-3">
                             <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
@@ -629,14 +629,14 @@ function ScheduleVisit() {
           <div className="flex justify-end space-x-3">
             <Button 
               variant="outline" 
-              className="text-sm px-4 py-2"
+              className="text-sm px-4 py-2 border border-[black] text-[black] hover:bg-gray-100"
               onClick={handleOrderLabTests}
             >
               <Flask className="w-4 h-4 mr-2" />
               Order Lab Tests
             </Button>
             <Button 
-              className="bg-teal-600 hover:bg-teal-700 text-sm px-4 py-2"
+              className="bg-[#FAFAFA] text-[#172B4C] border border-gray-200 hover:bg-gray-100 text-sm px-4 py-2"
               onClick={handleCompleteVisit}
             >
               <CheckCircle className="w-4 h-4 mr-2" />

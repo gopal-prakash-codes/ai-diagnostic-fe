@@ -100,25 +100,25 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4 flex items-center justify-between">
+        <div className="bg-[#FAFAFA] px-6 py-4 flex items-center justify-between border-b border-gray-200">
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-              <span className="text-white text-lg font-bold">
+            <div className="w-12 h-12 bg-[#FAFAFA] border border-gray-200 rounded-full flex items-center justify-center">
+              <span className="text-[#172B4C] text-lg font-bold">
                 {formData.name ? getInitials(formData.name) : <User className="w-6 h-6" />}
               </span>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">
+              <h2 className="text-xl font-bold text-gray-800">
                 {patient ? 'Edit Patient' : 'Add New Patient'}
               </h2>
-              <p className="text-teal-100 text-sm">
+              <p className="text-gray-600 text-sm">
                 {patient ? 'Update patient information' : 'Create a new patient record'}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-colors duration-200"
+            className="text-gray-700 hover:bg-gray-100 rounded-lg p-2 transition-colors duration-200 border border-gray-200"
           >
             <X className="w-6 h-6" />
           </button>
@@ -129,9 +129,9 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
           {simpleMode ? (
             // Simple mode - only basic fields
             <div className="space-y-6">
-              <div className="bg-gray-50 rounded-xl p-4">
+              <div className="bg-white rounded-xl p-4 border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                  <User className="w-5 h-5 mr-2 text-teal-500" />
+                  <User className="w-5 h-5 mr-2 text-[#172B4C]" />
                   Patient Information
                 </h3>
                 
@@ -144,7 +144,7 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
                       type="text"
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors duration-200"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-colors duration-200"
                       placeholder="Enter patient name"
                     />
                   </div>
@@ -158,7 +158,7 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
                         type="number"
                         value={formData.age}
                         onChange={(e) => handleInputChange('age', e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors duration-200"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-colors duration-200"
                         placeholder="Age"
                         min="1"
                         max="150"
@@ -172,7 +172,7 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
                       <select
                         value={formData.gender}
                         onChange={(e) => handleInputChange('gender', e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors duration-200"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-colors duration-200"
                       >
                         <option value="">Select gender</option>
                         <option value="male">Male</option>
@@ -188,9 +188,9 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left Column - Personal Information */}
             <div className="space-y-6">
-              <div className="bg-gray-50 rounded-xl p-4">
+              <div className="bg-white rounded-xl p-4 border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                  <User className="w-5 h-5 mr-2 text-teal-500" />
+                  <User className="w-5 h-5 mr-2 text-[#172B4C]" />
                   Personal Information
                 </h3>
                 
@@ -203,7 +203,7 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
                       type="text"
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors duration-200"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-colors duration-200"
                       placeholder="Enter patient's full name"
                     />
                   </div>
@@ -217,7 +217,7 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
                         type="number"
                         value={formData.age}
                         onChange={(e) => handleInputChange('age', e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors duration-200"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-colors duration-200"
                         placeholder="Age"
                         min="0"
                         max="120"
@@ -231,7 +231,7 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
                       <select
                         value={formData.gender}
                         onChange={(e) => handleInputChange('gender', e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors duration-200"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-colors duration-200"
                       >
                         <option value="">Select gender</option>
                         <option value="male">Male</option>
@@ -265,9 +265,9 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
               </div>
 
               {/* Contact Information */}
-              <div className="bg-gray-50 rounded-xl p-4">
+              <div className="bg-white rounded-xl p-4 border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                  <Phone className="w-5 h-5 mr-2 text-teal-500" />
+                  <Phone className="w-5 h-5 mr-2 text-[#172B4C]" />
                   Contact Information
                 </h3>
                 
@@ -280,7 +280,7 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors duration-200"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-colors duration-200"
                       placeholder="Enter phone number"
                     />
                   </div>
@@ -293,7 +293,7 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors duration-200"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-colors duration-200"
                       placeholder="Enter email address"
                     />
                   </div>
@@ -305,7 +305,7 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
                     <textarea
                       value={formData.address}
                       onChange={(e) => handleInputChange('address', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors duration-200"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-colors duration-200"
                       placeholder="Enter address"
                       rows="3"
                     />
@@ -330,9 +330,9 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
             {/* Right Column - Medical Information */}
             <div className="space-y-6">
               {/* Allergies */}
-              <div className="bg-gray-50 rounded-xl p-4">
+              <div className="bg-white rounded-xl p-4 border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                  <Calendar className="w-5 h-5 mr-2 text-teal-500" />
+                  <Calendar className="w-5 h-5 mr-2 text-[#172B4C]" />
                   Allergies
                 </h3>
                 
@@ -342,14 +342,14 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
                       type="text"
                       value={newAllergy}
                       onChange={(e) => setNewAllergy(e.target.value)}
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors duration-200"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-colors duration-200"
                       placeholder="Add allergy"
                       onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddAllergy())}
                     />
                     <Button
                       type="button"
                       onClick={handleAddAllergy}
-                      className="px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg transition-colors duration-200"
+                      className="px-4 py-2 bg-[#FAFAFA] text-[#172B4C] border border-gray-200 hover:bg-gray-100 rounded-lg transition-colors duration-200"
                     >
                       Add
                     </Button>
@@ -376,16 +376,16 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
               </div>
 
               {/* Medical History */}
-              <div className="bg-gray-50 rounded-xl p-4">
+              <div className="bg-white rounded-xl p-4 border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                  <Calendar className="w-5 h-5 mr-2 text-teal-500" />
+                  <Calendar className="w-5 h-5 mr-2 text-[#172B4C]" />
                   Medical History
                 </h3>
                 
                 <textarea
                   value={formData.medicalHistory}
                   onChange={(e) => handleInputChange('medicalHistory', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors duration-200"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-colors duration-200"
                   placeholder="Enter relevant medical history, chronic conditions, previous surgeries, etc."
                   rows="8"
                 />
@@ -400,13 +400,13 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
               type="button"
               onClick={onClose}
               variant="outline"
-              className="px-6 py-3 border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors duration-200"
+              className="px-6 py-3 border border-gray-300 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              className="px-6 py-3 bg-teal-500 hover:bg-teal-600 text-white rounded-lg transition-colors duration-200"
+              className="px-6 py-3 bg-[#FAFAFA] text-[#172B4C] border border-gray-200 hover:bg-gray-100 rounded-lg transition-colors duration-200"
             >
               {patient ? 'Update Patient' : 'Create Patient'}
             </Button>

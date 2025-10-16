@@ -26,7 +26,8 @@ const ProfessionalDICOMViewer = ({
   dicomUrl, 
   fileName, 
   fileType = 'original',
-  onClose 
+  onClose,
+  isIntegrated = false
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -893,6 +894,150 @@ const ProfessionalDICOMViewer = ({
     );
   }
 
+  // If integrated mode, render without fixed positioning
+  if (isIntegrated) {
+    return (
+      <div className="bg-[#DCE1EE] flex flex-col h-full">
+
+        {/* Professional Viewer Container */}
+        <div className="flex-1 flex">
+          {isLoading ? (
+            <div className="flex-1 flex items-center justify-center bg-white">
+              <div className="text-center text-gray-800">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2EB4B4] mx-auto mb-4"></div>
+                <p className="text-lg">Loading Medical Viewer...</p>
+                <p className="text-sm text-gray-600 mt-2">
+                  {isZipFile ? 'Processing Archive...' : 'Initializing Viewer'}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Main Viewport Area - Full Width */}
+              <div className="flex-grow flex flex-col w-full">
+                {/* Professional Toolbar */}
+                <div className="bg-white border-b border-gray-200 p-3 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    {/* Left side - Main tools */}
+                    <div className="flex items-center space-x-1">
+                      <button
+                        onClick={() => handleToolSelect('pan')}
+                        className={`p-3 rounded-lg transition-colors ${
+                          activeTool === 'pan' 
+                            ? 'bg-[#2EB4B4] text-white shadow-lg' 
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800'
+                        }`}
+                        title="Pan Tool"
+                      >
+                        <IoMove size={20} />
+                      </button>
+                      
+                      <button
+                        onClick={() => handleToolSelect('zoom')}
+                        className={`p-3 rounded-lg transition-colors ${
+                          activeTool === 'zoom' 
+                            ? 'bg-[#2EB4B4] text-white shadow-lg' 
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800'
+                        }`}
+                        title="Zoom Tool"
+                      >
+                        <IoSearch size={20} />
+                      </button>
+                      
+                      <button
+                        onClick={() => handleToolSelect('windowLevel')}
+                        className={`p-3 rounded-lg transition-colors ${
+                          activeTool === 'windowLevel' 
+                            ? 'bg-[#2EB4B4] text-white shadow-lg' 
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800'
+                        }`}
+                        title="Window/Level Tool"
+                      >
+                        <IoContrast size={20} />
+                      </button>
+                      
+                      <button
+                        onClick={() => handleToolSelect('reset')}
+                        className="p-3 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800"
+                        title="Reset View"
+                      >
+                        <IoRefresh size={20} />
+                      </button>
+                    </div>
+                    
+                    {/* Right side - Layout, settings and back button */}
+                    <div className="flex items-center space-x-1">
+                      <button
+                        onClick={() => setViewportLayout(viewportLayout === 'single' ? 'quad' : 'single')}
+                        className="p-3 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800"
+                        title={`Switch to ${viewportLayout === 'single' ? 'Quad' : 'Single'} View`}
+                      >
+                        <IoGridOutline size={20} />
+                      </button>
+                      
+                      <button
+                        onClick={() => toast.info('Settings panel coming soon!')}
+                        className="p-3 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800"
+                        title="Settings"
+                      >
+                        <IoSettings size={20} />
+                      </button>
+                      
+                      <button
+                        onClick={onClose}
+                        className="flex items-center px-3 py-2 text-sm font-medium text-white bg-red-500 rounded-md hover:bg-red-600 transition-colors"
+                        title="Back to Reports"
+                      >
+                        <IoCloseOutline className="w-4 h-4 mr-2" />
+                        Back
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main Viewport */}
+                <div className="flex-1 relative bg-black">
+                  <div
+                    ref={mainViewportRef}
+                    className="w-full h-full"
+                    style={{ minHeight: '500px' }}
+                  />
+                  
+                  {/* Navigation controls for multi-image files */}
+                  {totalImages > 1 && (
+                    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-sm">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => selectImage(Math.max(0, currentImageIndex - 1))}
+                          disabled={currentImageIndex === 0}
+                          className="p-1 bg-gray-600 rounded hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-xs"
+                        >
+                          ←
+                        </button>
+                        <span className="text-xs">
+                          {currentImageIndex + 1} / {totalImages}
+                        </span>
+                        <button
+                          onClick={() => selectImage(Math.min(totalImages - 1, currentImageIndex + 1))}
+                          disabled={currentImageIndex === totalImages - 1}
+                          className="p-1 bg-gray-600 rounded hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-xs"
+                        >
+                          →
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+      </div>
+    );
+  }
+
+  // Original full-screen mode
   return (
     <div className={`fixed inset-0 bg-[#DCE1EE] flex flex-col z-50 ${isFullscreen ? 'z-[9999]' : ''}`}>
       {/* Header */}
@@ -987,81 +1132,28 @@ const ProfessionalDICOMViewer = ({
                       <IoContrast size={20} />
                     </button>
                     
-                    <div className="w-px h-8 bg-gray-300 mx-2"></div>
-                    
                     <button
-                      onClick={() => handleToolSelect('length')}
-                      className={`p-3 rounded-lg transition-colors ${
-                        activeTool === 'length' 
-                          ? 'bg-[#2EB4B4] text-white shadow-lg' 
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800'
-                      }`}
-                      title="Length Measurement"
+                      onClick={() => handleToolSelect('reset')}
+                      className="p-3 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800"
+                      title="Reset View"
                     >
-                      <IoResize size={20} />
-                    </button>
-                    
-                    <button
-                      onClick={() => handleToolSelect('angle')}
-                      className={`p-3 rounded-lg transition-colors ${
-                        activeTool === 'angle' 
-                          ? 'bg-[#2EB4B4] text-white shadow-lg' 
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800'
-                      }`}
-                      title="Angle Measurement"
-                    >
-                      <IoTriangle size={20} />
-                    </button>
-                    
-                    <button
-                      onClick={() => handleToolSelect('roi')}
-                      className={`p-3 rounded-lg transition-colors ${
-                        activeTool === 'roi' 
-                          ? 'bg-[#2EB4B4] text-white shadow-lg' 
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800'
-                      }`}
-                      title="ROI Tool"
-                    >
-                      <IoSquareOutline size={20} />
+                      <IoRefresh size={20} />
                     </button>
                   </div>
                   
-                  {/* Center - Image info */}
-                  {isZipFile && extractedFiles.length > 0 && (
-                    <div className="flex items-center space-x-4 text-sm text-gray-600">
-                      <span>Image: {currentImageIndex + 1} / {totalImages}</span>
-                    </div>
-                  )}
-                  
-                  {/* Right side - Layout and utility tools */}
+                  {/* Right side - Layout and settings */}
                   <div className="flex items-center space-x-1">
                     <button
-                      onClick={resetView}
-                      className="p-3 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 transition-colors"
-                      title="Reset View"
-                    >
-                      <IoRefreshOutline size={20} />
-                    </button>
-                    
-                    <button
-                      onClick={toggleLayout}
-                      className="p-3 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 transition-colors"
-                      title="Toggle Layout"
+                      onClick={() => setViewportLayout(viewportLayout === 'single' ? 'quad' : 'single')}
+                      className="p-3 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800"
+                      title={`Switch to ${viewportLayout === 'single' ? 'Quad' : 'Single'} View`}
                     >
                       <IoGridOutline size={20} />
                     </button>
                     
                     <button
-                      onClick={() => {}}
-                      className="p-3 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 transition-colors"
-                      title="Export Image"
-                    >
-                      <IoCamera size={20} />
-                    </button>
-                    
-                    <button
-                      onClick={() => {}}
-                      className="p-3 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 transition-colors"
+                      onClick={() => toast.info('Settings panel coming soon!')}
+                      className="p-3 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800"
                       title="Settings"
                     >
                       <IoSettings size={20} />
@@ -1071,47 +1163,57 @@ const ProfessionalDICOMViewer = ({
               </div>
 
               {/* Main Viewport */}
-              <div className="viewport-grid flex-grow flex items-center justify-center p-4 bg-white">
-                <div 
+              <div className="flex-1 relative bg-black">
+                <div
                   ref={mainViewportRef}
-                  className="bg-black border-2 border-gray-300 relative overflow-hidden cursor-crosshair w-full h-full max-w-4xl max-h-full rounded-lg shadow-lg"
-                  style={{ minHeight: '400px', aspectRatio: '16/10' }}
-                >
-                  {/* Only show loading when actually loading - CONDITIONAL! */}
-                  {isLoading && (
-                    <div className="absolute inset-0 z-30 flex items-center justify-center bg-black bg-opacity-70">
-                      <div className="text-center text-white">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2EB4B4] mx-auto mb-3"></div>
-                        <div className="text-lg">Loading Medical Images...</div>
-                        <div className="text-sm text-gray-300 mt-2">
-                          {isPreloading && `Preloading ${totalImages} images... ${preloadProgress}%`}
-                        </div>
-                      </div>
+                  className="w-full h-full"
+                  style={{ minHeight: '400px' }}
+                />
+                
+                {/* Navigation controls for multi-image files */}
+                {totalImages > 1 && (
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-4 py-2 rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <button
+                        onClick={() => selectImage(Math.max(0, currentImageIndex - 1))}
+                        disabled={currentImageIndex === 0}
+                        className="p-2 bg-gray-600 rounded hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        ←
+                      </button>
+                      <span className="text-sm">
+                        {currentImageIndex + 1} / {totalImages}
+                      </span>
+                      <button
+                        onClick={() => selectImage(Math.min(totalImages - 1, currentImageIndex + 1))}
+                        disabled={currentImageIndex === totalImages - 1}
+                        className="p-2 bg-gray-600 rounded hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        →
+                      </button>
                     </div>
-                  )}
-                  
-                  {/* Viewport Info Overlay */}
-                  <div className="absolute top-4 left-4 bg-[#2EB4B4] bg-opacity-90 text-white p-2 rounded text-sm font-mono shadow-sm">
-                    <div>Medical Viewer</div>
-                    <div>Tool: {activeTool.charAt(0).toUpperCase() + activeTool.slice(1)}</div>
-                    {totalImages > 1 && (
-                      <div>Series: {currentImageIndex + 1}/{totalImages}</div>
+                  </div>
+                )}
+                
+                {/* Image navigation hint */}
+                {totalImages > 1 && (
+                  <div className="absolute top-4 right-4 bg-black bg-opacity-75 text-white p-2 rounded text-xs">
+                    Use mouse wheel or arrow keys to navigate
+                  </div>
+                )}
+                
+                {/* Mouse cursor sliding hint */}
+                {totalImages > 1 && (
+                  <div className="absolute bottom-4 right-4 bg-[#2EB4B4] bg-opacity-90 text-white p-2 rounded text-xs shadow-sm">
+                    {activeTool === 'zoom' ? (
+                      '🖱️ Scroll=Zoom | Drag=Navigate'
+                    ) : activeTool === 'pan' || activeTool === 'windowLevel' ? (
+                      '🖱️ Scroll or Shift+Drag to navigate'
+                    ) : (
+                      '🖱️ Scroll or Drag to navigate'
                     )}
                   </div>
-                  
-                  {/* Mouse cursor sliding hint */}
-                  {totalImages > 1 && (
-                    <div className="absolute bottom-4 right-4 bg-[#2EB4B4] bg-opacity-90 text-white p-2 rounded text-xs shadow-sm">
-                      {activeTool === 'zoom' ? (
-                        '🖱️ Scroll=Zoom | Drag=Navigate'
-                      ) : activeTool === 'pan' || activeTool === 'windowLevel' ? (
-                        '🖱️ Scroll or Shift+Drag to navigate'
-                      ) : (
-                        '🖱️ Scroll or Drag to navigate'
-                      )}
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
             </div>
           </>

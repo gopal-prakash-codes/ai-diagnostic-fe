@@ -223,13 +223,13 @@ function EmptyVisitHistoryCards({ selectedDate, onClearFilter }) {
     <div className="space-y-4">
       {/* Main Visit History Card - Empty State */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-        {/* Teal Header */}
-        <div className="bg-teal-500 px-4 py-3 flex items-center justify-between">
+        {/* Neutral Header */}
+        <div className="bg-[#FAFAFA] text-[#172B4C] px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Calendar className="w-5 h-5 text-white" />
-            <span className="text-white font-semibold text-base">Visit History</span>
+            <Calendar className="w-5 h-5 text-[#172B4C]" />
+            <span className="font-semibold text-base">Visit History</span>
           </div>
-          <div className="text-white text-sm">
+          <div className="text-sm text-[#172B4C]">
             No visits recorded
           </div>
         </div>
@@ -327,7 +327,7 @@ function VisitHistoryCards({ diagnoses, selectedDate, onClearFilter }) {
           <h3 className="text-lg font-medium text-gray-900 mb-2">No sessions found</h3>
           <p className="text-sm text-gray-500 mb-4">No sessions available for the selected criteria.</p>
           {selectedDate && (
-            <Button variant="outline" onClick={onClearFilter}>
+            <Button variant="outline" onClick={onClearFilter} className="border border-gray-300 text-gray-800 hover:bg-gray-100">
               Clear Date Filter
             </Button>
           )}
@@ -340,13 +340,13 @@ function VisitHistoryCards({ diagnoses, selectedDate, onClearFilter }) {
     <div className="space-y-4">
       {/* Main Visit History Card */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-        {/* Teal Header */}
-        <div className="bg-teal-500 px-4 py-3 flex items-center justify-between">
+        {/* Neutral Header */}
+        <div className="bg-[#FAFAFA] text-[#172B4C] px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Calendar className="w-5 h-5 text-white" />
-            <span className="text-white font-semibold text-base">Visit History</span>
+            <Calendar className="w-5 h-5 text-[#172B4C]" />
+            <span className="font-semibold text-base">Visit History</span>
           </div>
-          <div className="text-white text-sm">
+          <div className="text-sm text-[#172B4C]">
             {new Date(currentSession.createdAt).toLocaleDateString('en-US', {
               year: 'numeric',
               month: '2-digit',
@@ -408,7 +408,7 @@ function VisitHistoryCards({ diagnoses, selectedDate, onClearFilter }) {
                 {currentSession.diagnosis && currentSession.diagnosis.trim() ? (
                   currentSession.diagnosis.split(',').map((diag, idx) => (
                     <div key={idx} className="flex items-center">
-                      <div className="w-2 h-2 bg-teal-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full mr-3"></div>
                       <span className="text-sm text-gray-700">{diag.trim()}</span>
                     </div>
                   ))
@@ -431,7 +431,7 @@ function VisitHistoryCards({ diagnoses, selectedDate, onClearFilter }) {
                 {currentSession.symptoms && currentSession.symptoms.length > 0 ? (
                   currentSession.symptoms.map((symptom, idx) => (
                     <div key={idx} className="flex items-center">
-                      <div className="w-2 h-2 bg-teal-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full mr-3"></div>
                       <span className="text-sm text-gray-700">{symptom}</span>
                     </div>
                   ))
@@ -692,15 +692,15 @@ function PatientHistory() {
     <SidebarLayout isOpen={isOpen}>
       <Navbar toggleSidebar={toggleSidebar} user={user} logout={logout} />
       
-      <div className="h-[calc(100vh_-_96px)] bg-[#DCE1EE] p-4 sm:p-6 md:p-8 font-sans overflow-y-auto">
+      <div className="h-[calc(100vh_-_96px)] bg-[#F8FAFC] p-4 sm:p-6 md:p-8 font-sans overflow-y-auto">
         <div className="flex flex-col gap-6">
           {/* Patient Header Section */}
           <div className="bg-transparent p-6 mb-3">
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
               {/* Patient Info */}
               <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 rounded-full bg-indigo-500 flex items-center justify-center border-4 border-gray-200">
-                  <span className="text-white text-xl font-bold">
+                <div className="w-16 h-16 rounded-full bg-[#FAFAFA] flex items-center justify-center border-4 border-gray-200">
+                  <span className="text-[#172B4C] text-xl font-bold">
                     {patient.name ? patient.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'NA'}
                   </span>
                 </div>
@@ -716,10 +716,10 @@ function PatientHistory() {
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm"
+                  className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-300 focus:border-gray-300 text-sm"
                 />
                 <Button 
-                  className="bg-teal-600 hover:bg-teal-700 text-sm px-4 py-2"
+                  className="bg-[#FAFAFA] text-[#172B4C] border border-gray-200 hover:bg-gray-100 text-sm px-4 py-2"
                   onClick={() => navigate(`/patient/${patientId}/schedule`, { 
                     state: { patient: patient } 
                   })}
@@ -734,7 +734,7 @@ function PatientHistory() {
           {/* Visit History Cards */}
           {loading ? (
             <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mx-auto"></div>
               <p className="text-sm text-gray-500 mt-2">Loading patient history...</p>
             </div>
           ) : error ? (
