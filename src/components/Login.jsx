@@ -131,9 +131,9 @@ const Login = () => {
     !fieldErrors.email && !fieldErrors.password;
 
   return (
-    <div className="flex ">
+    <div className="flex min-h-screen bg-[#F8FAFC]">
       {/* Left half: Image container */}
-      <div className='p-6 w-1/2'>
+      <div className='hidden lg:block w-1/2 h-screen sticky top-0 bg-white rounded-xl border border-gray-200 overflow-hidden'>
         {/* <img
           src={doctorImg}
           alt="A female doctor smiling"
@@ -142,13 +142,13 @@ const Login = () => {
         <img
           src={doctorImg}
           alt="A female doctor smiling"
-          className=' '
+          className='w-full h-full object-cover'
         />
       </div>
 
       {/* Right half: Login form container */}
-      <div className="flex items-center justify-center w-full p-20 lg:w-1/2">
-        <div className="w-full  p-8 bg-white rounded-lg">
+      <div className="flex items-center justify-center w-full p-8 sm:p-16 lg:w-1/2">
+        <div className="w-full max-w-md p-0">
           {/* Logo and title */}
           <div className="flex flex-col items-center mb-6 text-center">
               <img src={logo} alt="Arogya AI Logo" />
@@ -251,13 +251,7 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={!isFormValid || isLoading}
-                className={`
-                  w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-semibold text-white transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2
-                  ${isFormValid && !isLoading
-                    ? 'bg-[#2EB4B4]'
-                    : 'bg-[#2EB4B4] cursor-not-allowed'
-                  }
-                `}
+                className="w-full flex justify-center py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 focus:outline-none bg-gradient-to-r from-red-500 to-black text-white hover:from-red-600 hover:to-black"
               >
                 {isLoading ? (
                   <>
