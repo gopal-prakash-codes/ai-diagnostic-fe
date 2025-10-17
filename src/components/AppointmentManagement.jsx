@@ -116,7 +116,7 @@ const AppointmentManagement = () => {
 
       {/* Appointments Card */}
       <div className="bg-white rounded-lg shadow ">
-        <div className="bg-[#FAFAFA] px-4 py-3 text-[#172B4C] font-semibold text-lg rounded-t-lg">
+        <div className="bg-red-700  px-4 py-3 text-white font-semibold text-lg rounded-t-lg">
           Today's Appointments
         </div>
 

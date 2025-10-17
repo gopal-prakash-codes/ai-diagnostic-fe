@@ -116,18 +116,12 @@ const RadiologyReports = () => {
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-800 pb-2">Radiology Reports</h1>
-              <p className="text-black text-md">Complete Medical History And Visit</p>
             </div>
-            <button className="bg-[#FAFAFA] text-[#172B4C] px-4 py-2 rounded-md flex items-center gap-3 border border-gray-200 hover:bg-gray-100 transition-colors">
-              <RiTempColdLine className='text-2xl' />
-              Order Radiology Test
-            </button>
           </div>
 
           {/* Reports Card */}
           <div className="bg-white rounded-lg shadow">
-            <div className="flex items-center gap-2 bg-[#FAFAFA] px-4 py-3 text-[#172B4C] font-semibold text-lg rounded-t-lg">
-              <IoIosFlask className="text-3xl" />
+            <div className="px-4 py-3 bg-red-700 text-white font-semibold text-lg rounded-t-lg">
               Recent Radiology Reports ({reports.length})
             </div>
 
@@ -162,17 +156,10 @@ const RadiologyReports = () => {
                       </div>
                     </div>
 
-                    {/* Status + View */}
-                    <div className="flex flex-wrap gap-3 items-center justify-start sm:justify-end">
-                      <span
-                        className={`text-md px-3 py-3 rounded-md font-semibold ${getStatusClass(
-                          report.status
-                        )}`}
-                      >
-                        {report.status}
-                      </span>
+                    {/* Actions */}
+                    <div className="flex flex-wrap gap-2 items-center justify-start sm:justify-end">
                       <Link to={`/radiology-report/${report.id}`}>
-                        <button className="border border-[black] text-[black] text-md px-3 py-2 rounded hover:bg-gray-100 transition-colors">
+                        <button className="border border-[black] text-[black] text-sm px-2 py-1 rounded hover:bg-gray-100 transition-colors">
                           View Report
                         </button>
                       </Link>

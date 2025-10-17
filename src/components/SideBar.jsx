@@ -52,8 +52,8 @@ export default function SidebarLayout({ isOpen, children }) {
             </div>
           </Link>
 
-          <Link to={"/radiology"} className={`${location.pathname === "/radiology" ? `text-white` : `text-gray-300 hover:text-white`} flex items-center justify-center sm:justify-start w-full font-[family-name:var(--font-gabarito)] transition-colors duration-200`}>
-            <div className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg transition-transform duration-200 ${location.pathname === "/radiology" ? 'bg-gradient-to-r from-red-500 to-black' : 'hover:-translate-y-0.5'}`}>
+          <Link to={"/radiology"} className={`${location.pathname === "/radiology" || location.pathname.startsWith("/radiology-report") || location.pathname.startsWith("/report-view") ? `text-white` : `text-gray-300 hover:text-white`} flex items-center justify-center sm:justify-start w-full font-[family-name:var(--font-gabarito)] transition-colors duration-200`}>
+            <div className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg transition-transform duration-200 ${location.pathname === "/radiology" || location.pathname.startsWith("/radiology-report") || location.pathname.startsWith("/report-view") ? 'bg-gradient-to-r from-red-500 to-black' : 'hover:-translate-y-0.5'}`}>
               <span className='text-xl'><IoIosFlask /></span>
               {isOpen && <span className="text-sm font-medium">Radiology</span>}
             </div>

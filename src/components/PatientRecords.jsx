@@ -148,7 +148,7 @@ const PatientRecords = () => {
           {/* Patient Records Card */}
           <div className="bg-white rounded-lg shadow">
             {/* Card Header */}
-            <div className="bg-[#FAFAFA] px-4 py-3 text-[#172B4C] font-semibold text-lg rounded-t-lg flex items-center justify-between">
+            <div className="bg-red-700 px-4 py-3 text-white font-semibold text-lg rounded-t-lg flex items-center justify-between">
               <span>Patient Records</span>
               <span className="text-sm font-normal opacity-90">
                 {loading ? 'Loading...' : `${patients.length} patients`}

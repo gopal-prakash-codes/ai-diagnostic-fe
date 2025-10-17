@@ -14,7 +14,8 @@ import {
   IoRefreshOutline,
   IoGridOutline,
   IoCamera,
-  IoSettings
+  IoSettings,
+  IoArrowBack
 } from 'react-icons/io5';
 import { toast } from 'react-toastify';
 import JSZip from 'jszip';
@@ -988,7 +989,7 @@ const ProfessionalDICOMViewer = ({
                         className="flex items-center px-3 py-2 text-sm font-medium text-white bg-red-500 rounded-md hover:bg-red-600 transition-colors"
                         title="Back to Reports"
                       >
-                        <IoCloseOutline className="w-4 h-4 mr-2" />
+                        <IoArrowBack className="w-4 h-4 mr-2" />
                         Back
                       </button>
                     </div>
@@ -1068,9 +1069,9 @@ const ProfessionalDICOMViewer = ({
           <button 
             onClick={onClose}
             className="p-2 bg-red-500 text-white rounded hover:bg-red-600"
-            title="Close Viewer"
+            title="Back to Reports"
           >
-            <IoCloseOutline />
+            <IoArrowBack />
           </button>
         </div>
       </div>

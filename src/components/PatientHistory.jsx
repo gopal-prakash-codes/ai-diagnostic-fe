@@ -224,12 +224,12 @@ function EmptyVisitHistoryCards({ selectedDate, onClearFilter }) {
       {/* Main Visit History Card - Empty State */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
         {/* Neutral Header */}
-        <div className="bg-[#FAFAFA] text-[#172B4C] px-4 py-3 flex items-center justify-between">
+        <div className="bg-red-700 text-white px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Calendar className="w-5 h-5 text-[#172B4C]" />
-            <span className="font-semibold text-base">Visit History</span>
+            <Calendar className="w-5 h-5 text-white" />
+            <span className="font-semibold text-base text-white">Visit History</span>
           </div>
-          <div className="text-sm text-[#172B4C]">
+          <div className="text-sm text-white">
             No visits recorded
           </div>
         </div>
@@ -341,12 +341,12 @@ function VisitHistoryCards({ diagnoses, selectedDate, onClearFilter }) {
       {/* Main Visit History Card */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
         {/* Neutral Header */}
-        <div className="bg-[#FAFAFA] text-[#172B4C] px-4 py-3 flex items-center justify-between">
+        <div className="bg-red-700 text-white px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Calendar className="w-5 h-5 text-[#172B4C]" />
-            <span className="font-semibold text-base">Visit History</span>
+            <Calendar className="w-5 h-5 text-white" />
+            <span className="font-semibold text-base text-white">Visit History</span>
           </div>
-          <div className="text-sm text-[#172B4C]">
+          <div className="text-sm text-white">
             {new Date(currentSession.createdAt).toLocaleDateString('en-US', {
               year: 'numeric',
               month: '2-digit',

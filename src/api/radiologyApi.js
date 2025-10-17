@@ -186,6 +186,26 @@ export const radiologyApi = {
     }
   },
 
+  deleteScanRecord: async (scanRecordId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}api/radiology/scans/${scanRecordId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete scan record');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Delete scan record error:', error);
+      throw error;
+    }
+  },
+
   // Get all reports for a specific patient
   getPatientReports: async (patientId) => {
     try {

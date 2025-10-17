@@ -19,6 +19,8 @@ const RadiologyReportDetail = () => {
     const [selectedScanType, setSelectedScanType] = useState('');
     const [isAnalyzing2D, setIsAnalyzing2D] = useState(false);
     const [isAnalyzing3D, setIsAnalyzing3D] = useState(false);
+    const [deletingItems, setDeletingItems] = useState(new Set());
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false, type: null, id: null, name: null });
     const [analysisResults, setAnalysisResults] = useState([]);
     const [jobStatuses, setJobStatuses] = useState({});
     const [selectedResult, setSelectedResult] = useState(null);
@@ -45,8 +47,8 @@ const RadiologyReportDetail = () => {
     // Analysis is now handled through Node.js backend - no direct API calls needed
     
 
-    const loadReportData = useCallback(async () => {
-        if (loadingRef.current || currentReportIdRef.current === reportId) {
+    const loadReportData = useCallback(async (forceReload = false) => {
+        if (loadingRef.current || (!forceReload && currentReportIdRef.current === reportId)) {
             return;
         }
         
@@ -59,6 +61,7 @@ const RadiologyReportDetail = () => {
                 try {
                     const response = await radiologyApi.getReport(reportId);
                     if (response.success) {
+                        
                         // Update with real data if report exists
                         setReportData(response.data.report);
                         setPatientData(response.data.report.patient);
@@ -255,7 +258,7 @@ const RadiologyReportDetail = () => {
     // Poll for analysis results
     const pollAnalysisResult = (analysisId, resultId) => {
         let attempts = 0;
-        const maxAttempts = 200; // ~10 minutes max
+        const maxAttempts = 20; // ~10 minutes max with 30s interval 
         
         const pollInterval = setInterval(async () => {
             attempts += 1;
@@ -315,7 +318,7 @@ const RadiologyReportDetail = () => {
                 console.error('Error polling analysis result:', error);
                 // Continue polling despite errors
             }
-        }, 3000); // Poll every 3 seconds
+        }, 30000); // Poll every 30 seconds
     };
 
     // Old API functions removed - now using Node.js backend integration
@@ -411,13 +414,19 @@ const RadiologyReportDetail = () => {
                         
                         toast.success('2D Analysis started successfully!');
                         
-                        // Start polling for completion (check every 3 seconds)
                         const pollForCompletion = setInterval(async () => {
                             try {
                                 const reportResponse = await radiologyApi.getReport(currentReport.reportId);
                                 if (reportResponse.success) {
                                     const updatedScanRecords = reportResponse.data.scanRecords || [];
                                     const updatedScan = updatedScanRecords.find(scan => scan._id === uploadResult.scanRecord._id);
+                                    
+                                    console.log('🔍 3D Polling Debug:', {
+                                        reportResponse: reportResponse,
+                                        updatedScanRecords: updatedScanRecords,
+                                        updatedScan: updatedScan,
+                                        uploadResultScanId: uploadResult.scanRecord._id
+                                    });
                                     
                                     if (updatedScan && updatedScan.analysisStatus === 'completed') {
                                         clearInterval(pollForCompletion);
@@ -460,7 +469,7 @@ const RadiologyReportDetail = () => {
                             } catch (pollError) {
                                 console.error('Polling error:', pollError);
                             }
-                        }, 3000);
+                        }, 30000); // Poll every 30 seconds
                         
                         // Stop polling after 10 minutes
                         setTimeout(() => {
@@ -538,6 +547,7 @@ const RadiologyReportDetail = () => {
                                 if (reportResponse.success) {
                                     const updatedScanRecords = reportResponse.data.scanRecords || [];
                                     const updatedScan = updatedScanRecords.find(scan => scan._id === uploadResult.scanRecord._id);
+                                    
                                     
                                     if (updatedScan && updatedScan.analysisStatus === 'completed') {
                                         clearInterval(pollForCompletion);
@@ -625,6 +635,76 @@ const RadiologyReportDetail = () => {
         }
     };
 
+    const openDeleteModal = (type, id, name) => {
+        setDeleteModal({ isOpen: true, type, id, name });
+    };
+
+    const closeDeleteModal = () => {
+        setDeleteModal({ isOpen: false, type: null, id: null, name: null });
+    };
+
+    const handleDeleteReport = async (reportId) => {
+        const report = patientReports.find(r => r.reportId === reportId);
+        openDeleteModal('report', reportId, report?.reportId || 'Report');
+    };
+
+    const confirmDeleteReport = async (reportId) => {
+        closeDeleteModal();
+        setDeletingItems(prev => new Set(prev).add(reportId));
+
+        try {
+            await radiologyApi.deleteReport(reportId);
+            toast.success('Report deleted successfully');
+            
+            // Remove the report from patient reports list immediately
+            setPatientReports(prev => prev.filter(report => report.reportId !== reportId));
+            
+            // If this is the current report being viewed, navigate away
+            if (reportData?.reportId === reportId) {
+                navigate('/radiology');
+                return;
+            }
+        } catch (error) {
+            console.error('Delete report error:', error);
+            toast.error('Failed to delete report');
+        } finally {
+            setDeletingItems(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(reportId);
+                return newSet;
+            });
+        }
+    };
+
+    const handleDeleteScanRecord = async (scanRecordId) => {
+        const scanRecord = scanRecords.find(scan => scan._id === scanRecordId);
+        const fileName = scanRecord?.originalFileName || 'Scan Record';
+        openDeleteModal('scanRecord', scanRecordId, fileName);
+    };
+
+    const confirmDeleteScanRecord = async (scanRecordId) => {
+        closeDeleteModal();
+        setDeletingItems(prev => new Set(prev).add(scanRecordId));
+
+        try {
+            await radiologyApi.deleteScanRecord(scanRecordId);
+            toast.success('Scan record deleted successfully');
+            
+            // Remove the scan record from state immediately for instant UI update
+            setScanRecords(prev => prev.filter(scan => scan._id !== scanRecordId));
+            setAnalysisResults(prev => prev.filter(result => result.id !== scanRecordId));
+        } catch (error) {
+            console.error('Delete scan record error:', error);
+            toast.error('Failed to delete scan record');
+        } finally {
+            setDeletingItems(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(scanRecordId);
+                return newSet;
+            });
+        }
+    };
+
     const close3DViewer = () => {
         setShow3DViewer(false);
         setSelectedImage(null);
@@ -683,27 +763,31 @@ const RadiologyReportDetail = () => {
         
         // Add analysis results
         analysisResults.forEach((result) => {
-            combinedData.push({
+            const tableRow = {
                 id: result.id,
-            scanType: result.scanType,
-            fileName: result.fileName,
-            type: result.type,
-            originalDicom: "available",
+                scanType: result.scanType,
+                fileName: result.fileName,
+                type: result.type,
+                originalDicom: "available",
                 analysedDicom: result.status === 'processing' ? 'processing' : 
                               result.status === 'completed' ? 'available' : 
                               result.status === 'failed' ? 'failed' : 'pending',
                 report: result.status === 'completed' ? 'available' : 
                        result.status === 'failed' ? 'failed' : 'pending',
-            result: result,
+                result: result,
                 scanRecord: result.scanRecord
-            });
+            };
+            
+            
+            combinedData.push(tableRow);
         });
         
         // Add scan records that don't have analysis results yet
         scanRecords.forEach((scanRecord) => {
             const existingResult = analysisResults.find(r => r.id === scanRecord._id);
+            
             if (!existingResult) {
-                combinedData.push({
+                const tableRow = {
                     id: scanRecord._id,
                     scanType: scanRecord.scanType,
                     fileName: scanRecord.originalFileName,
@@ -715,7 +799,9 @@ const RadiologyReportDetail = () => {
                     report: scanRecord.analysisStatus === 'completed' ? 'available' : 
                            scanRecord.analysisStatus === 'failed' ? 'failed' : 'pending',
                     scanRecord: scanRecord
-                });
+                };
+                
+                combinedData.push(tableRow);
             }
         });
         
@@ -791,7 +877,8 @@ const RadiologyReportDetail = () => {
                                         <select 
                                             value={selectedScanType}
                                             onChange={handleScanTypeChange}
-                                            className="w-48 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent"
+                                            className="w-40 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent appearance-none"
+                                            style={{ backgroundImage: "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e\")", backgroundPosition: "right 0.75rem center", backgroundRepeat: "no-repeat", backgroundSize: "1.5em 1.5em" }}
                                         >
                                             <option value="">Select Type</option>
                                             <option value="Report">Report</option>
@@ -850,9 +937,16 @@ const RadiologyReportDetail = () => {
                                                         </button>
                                                         <button
                                                             onClick={() => navigate(`/report-view/${report.reportId}`)}
-                                                            className="text-blue-600 hover:text-blue-800"
+                                                            className="text-blue-600 hover:text-blue-800 mr-3"
                                                         >
                                                             Details
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteReport(report.reportId)}
+                                                            disabled={deletingItems.has(report.reportId)}
+                                                            className={`${deletingItems.has(report.reportId) ? 'text-gray-400 cursor-not-allowed' : 'text-red-600 hover:text-red-800'}`}
+                                                        >
+                                                            {deletingItems.has(report.reportId) ? 'Deleting...' : 'Delete'}
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -949,27 +1043,25 @@ const RadiologyReportDetail = () => {
         <button 
             onClick={handleAnalyze2D}
             disabled={isAnalyzing2D || !uploadedImage || !selectedScanType}
-            className={`px-6 py-3 rounded-md flex items-center gap-2 transition-colors ${
+            className={`px-3 py-1.5 rounded-md flex items-center gap-2 transition-colors ${
                 isAnalyzing2D || !uploadedImage || !selectedScanType
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-200'
                     : 'bg-[#FAFAFA] text-[#172B4C] border border-gray-200 hover:bg-gray-100'
             }`}
         >
-            <IoIosFlask className="text-xl" /> 
-            {isAnalyzing2D ? 'Analyzing 2D...' : 'Analyze 2D Image'}
+            {isAnalyzing2D ? 'Analyzing 2D...' : 'Analyze 2D'}
         </button>
         
         <button 
             onClick={handleAnalyze3D}
             disabled={isAnalyzing3D || !uploadedZipFile || !selectedScanType}
-            className={`px-6 py-3 rounded-md flex items-center gap-2 transition-colors ${
+            className={`px-3 py-1.5 rounded-md flex items-center gap-2 transition-colors ${
                 isAnalyzing3D || !uploadedZipFile || !selectedScanType
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-200'
                     : 'bg-[#FAFAFA] text-[#172B4C] border border-gray-200 hover:bg-gray-100'
             }`}
         >
-            <IoIosFlask className="text-xl" /> 
-            {isAnalyzing3D ? 'Analyzing 3D...' : 'Analyze 3D DICOM'}
+            {isAnalyzing3D ? 'Analyzing 3D...' : 'Analyze DICOM'}
         </button>
     </div>
 </div>
@@ -977,7 +1069,7 @@ const RadiologyReportDetail = () => {
 
                         {/* Data Table */}
                         <div className="bg-white rounded-lg shadow-sm overflow-hidden mt-8">
-                            <div className="px-6 py-4 bg-[#FAFAFA] text-[#172B4C]">
+                            <div className="px-6 py-4 bg-red-700 text-white ">
                                 <h3 className="text-lg font-semibold">Scan Records</h3>
                             </div>
                             <div className="overflow-x-auto">
@@ -996,12 +1088,15 @@ const RadiologyReportDetail = () => {
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 View Report
                                             </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Actions
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
                                         {getTableData().length === 0 ? (
                                             <tr>
-                                                <td colSpan="4" className="px-6 py-12 text-center">
+                                                <td colSpan="5" className="px-6 py-12 text-center">
                                                     <div className="text-gray-500">
                                                         <IoDocumentTextOutline className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                                                         <h3 className="text-lg font-medium mb-2">No Analysis Results Yet</h3>
@@ -1014,17 +1109,12 @@ const RadiologyReportDetail = () => {
                                             <tr key={scan.id} className="hover:bg-gray-50">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex flex-col">
-                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#FAFAFA] text-[#172B4C] border border-gray-200 mb-1">
-                                                            {scan.scanType}
+                                                        <span className="text-xs font-small text-[#172B4C] mb-0">
+                                                            {scan.type === '3D' ? 'DICOM' : '2D'}
                                                         </span>
                                                         {scan.fileName && (
-                                                            <span className="text-xs text-gray-500 truncate max-w-32" title={scan.fileName}>
+                                                            <span className="text-sm text-gray-700 truncate max-w-32" title={scan.fileName}>
                                                                 {scan.fileName}
-                                                            </span>
-                                                        )}
-                                                        {scan.type && (
-                                                            <span className="text-xs text-gray-400">
-                                                                {scan.type} Analysis
                                                             </span>
                                                         )}
                                                     </div>
@@ -1071,7 +1161,7 @@ const RadiologyReportDetail = () => {
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {scan.scanType === 'DICOM' ? (
+                                                    {scan.scanType === 'DICOM' || scan.scanType === 'Report' ? (
                                                         scan.analysedDicom === 'available' ? (
                                                             <button 
                                                                 onClick={() => handleViewImage(
@@ -1146,6 +1236,21 @@ const RadiologyReportDetail = () => {
                                                     ) : (
                                                         <span className="text-gray-400 text-sm">-</span>
                                                     )}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <button
+                                                        onClick={() => handleDeleteScanRecord(scan.scanRecord?._id || scan.id)}
+                                                        disabled={deletingItems.has(scan.scanRecord?._id || scan.id)}
+                                                        className={`inline-flex items-center px-3 py-1 rounded-md text-sm border transition-colors ${
+                                                            deletingItems.has(scan.scanRecord?._id || scan.id)
+                                                                ? 'border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed'
+                                                                : 'border-red-300 text-red-600 hover:bg-red-50'
+                                                        }`}
+                                                        title="Delete Scan Record"
+                                                    >
+                                                        <IoTrashOutline className="mr-1" /> 
+                                                        {deletingItems.has(scan.scanRecord?._id || scan.id) ? 'Deleting...' : 'Delete'}
+                                                    </button>
                                                 </td>
                                             </tr>
                                         )))}
@@ -1343,6 +1448,55 @@ const RadiologyReportDetail = () => {
                                         }
                                     }}
                                 />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Delete Confirmation Modal */}
+                {deleteModal.isOpen && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg max-w-md w-full p-6">
+                            <div className="flex items-center mb-4">
+                                <div className="flex-shrink-0 w-10 h-10 mx-auto flex items-center justify-center rounded-full bg-red-100">
+                                    <IoTrashOutline className="w-6 h-6 text-red-600" />
+                                </div>
+                            </div>
+                            
+                            <div className="text-center">
+                                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                                    Delete {deleteModal.type === 'report' ? 'Report' : 'Scan Record'}?
+                                </h3>
+                                <p className="text-sm text-gray-500 mb-6">
+                                    Are you sure you want to delete <strong>"{deleteModal.name}"</strong>? 
+                                    This action cannot be undone.
+                                </p>
+                                
+                                <div className="flex justify-center space-x-3">
+                                    <button
+                                        onClick={closeDeleteModal}
+                                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (deleteModal.type === 'report') {
+                                                confirmDeleteReport(deleteModal.id);
+                                            } else {
+                                                confirmDeleteScanRecord(deleteModal.id);
+                                            }
+                                        }}
+                                        disabled={deletingItems.has(deleteModal.id)}
+                                        className={`px-4 py-2 text-sm font-medium text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                            deletingItems.has(deleteModal.id)
+                                                ? 'bg-gray-400 cursor-not-allowed'
+                                                : 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
+                                        }`}
+                                    >
+                                        {deletingItems.has(deleteModal.id) ? 'Deleting...' : 'Delete'}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

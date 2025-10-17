@@ -446,10 +446,10 @@ function ScheduleVisit() {
           {/* Patient Information and Allergies */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card className="bg-white border border-gray-200 rounded-xl shadow-sm">
-              <CardHeader className="bg-[#FAFAFA] px-4 py-3 rounded-t-xl">
+              <CardHeader className="bg-red-700 px-4 py-3 rounded-t-xl">
                 <div className="flex items-center space-x-2">
-                  <User className="w-4 h-4 text-[#172B4C]" />
-                  <span className="text-[#172B4C] font-semibold text-sm">Patient Information</span>
+                  <User className="w-4 h-4 text-white" />
+                  <span className="text-white font-semibold text-sm">Patient Information</span>
                 </div>
               </CardHeader>
               <CardContent className="p-4">
@@ -471,10 +471,10 @@ function ScheduleVisit() {
             </Card>
 
             <Card className="bg-white border border-gray-200 rounded-xl shadow-sm">
-              <CardHeader className="bg-[#FAFAFA] px-4 py-3 rounded-t-xl">
+              <CardHeader className="bg-red-700 px-4 py-3 rounded-t-xl">
                 <div className="flex items-center space-x-2">
-                  <AlertTriangle className="w-4 h-4 text-[#172B4C]" />
-                  <span className="text-[#172B4C] font-semibold text-sm">Allergies</span>
+                  <AlertTriangle className="w-4 h-4 text-white" />
+                  <span className="text-white font-semibold text-sm">Allergies</span>
                 </div>
               </CardHeader>
               <CardContent className="p-4">
@@ -507,10 +507,10 @@ function ScheduleVisit() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Transcription */}
             <Card className="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col w-full h-96">
-              <CardHeader className="bg-[#FAFAFA] px-4 py-3 rounded-t-xl">
+              <CardHeader className="bg-red-700 px-4 py-3 rounded-t-xl">
                 <div className="flex items-center space-x-2">
-                  <Mic className="w-5 h-5 text-[#172B4C]" />
-                  <span className="text-[#172B4C] font-semibold text-base">Transcription</span>
+                  <Mic className="w-5 h-5 text-white" />
+                  <span className="text-white font-semibold text-base">Transcription</span>
                 </div>
               </CardHeader>
               <CardContent className="p-4 flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -524,10 +524,10 @@ function ScheduleVisit() {
 
             {/* Diagnosis & Next Steps */}
             <Card className="bg-white border border-gray-200 rounded-xl shadow-sm">
-              <CardHeader className="bg-[#FAFAFA] px-4 py-3 rounded-t-xl">
+              <CardHeader className="bg-red-700 px-4 py-3 rounded-t-xl">
                 <div className="flex items-center space-x-2">
-                  <ActivityIcon className="w-5 h-5 text-[#172B4C]" />
-                  <span className="text-[#172B4C] font-semibold text-base">Diagnosis & Next Steps</span>
+                  <ActivityIcon className="w-5 h-5 text-white" />
+                  <span className="text-white font-semibold text-base">Diagnosis & Next Steps</span>
                 </div>
               </CardHeader>
               <CardContent className="p-4 space-y-4">
