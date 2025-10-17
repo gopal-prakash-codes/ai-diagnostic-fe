@@ -1161,33 +1161,38 @@ const RadiologyReportDetail = () => {
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {scan.scanType === 'DICOM' || scan.scanType === 'Report' ? (
-                                                        scan.analysedDicom === 'available' ? (
-                                                            <button 
-                                                                onClick={() => handleViewImage(
-                                                                    scan.scanRecord?._id || scan.id, 
-                                                                    scan.fileName,
-                                                                    'analyzed',
-                                                                    'professional'
-                                                                )}
-                                                                className="inline-flex items-center px-3 py-1 rounded-md text-sm border border-[black] text-[black] hover:bg-gray-100 transition-colors"
-                                                                title="View Processed Medical Images"
-                                                            >
-                                                                <IoEyeOutline className="mr-1" /> View Processed Images
-                                                            </button>
-                                                        ) : scan.analysedDicom === 'processing' ? (
-                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                                                Processing
-                                                            </span>
-                                                        ) : scan.analysedDicom === 'failed' ? (
-                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                                Failed
-                                                            </span>
+                                                    {/* Only show processed images for 3D/DICOM analysis */}
+                                                    {scan.type === '3D' ? (
+                                                        (scan.scanType === 'DICOM' || scan.scanType === 'Report') ? (
+                                                            scan.analysedDicom === 'available' ? (
+                                                                <button 
+                                                                    onClick={() => handleViewImage(
+                                                                        scan.scanRecord?._id || scan.id, 
+                                                                        scan.fileName,
+                                                                        'analyzed',
+                                                                        'professional'
+                                                                    )}
+                                                                    className="inline-flex items-center px-3 py-1 rounded-md text-sm border border-[black] text-[black] hover:bg-gray-100 transition-colors"
+                                                                    title="View Processed Medical Images"
+                                                                >
+                                                                    <IoEyeOutline className="mr-1" /> View Processed Images
+                                                                </button>
+                                                            ) : scan.analysedDicom === 'processing' ? (
+                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                                    Processing
+                                                                </span>
+                                                            ) : scan.analysedDicom === 'failed' ? (
+                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                                    Failed
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-gray-400 text-sm">Pending</span>
+                                                            )
                                                         ) : (
-                                                            <span className="text-gray-400 text-sm">Pending</span>
+                                                            <span className="text-gray-400 text-sm">-</span>
                                                         )
                                                     ) : (
-                                                        <span className="text-gray-400 text-sm">-</span>
+                                                        <span className="text-gray-400 text-sm">N/A</span>
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
