@@ -8,7 +8,6 @@ import Signup from './components/Signup'
 import PatientHistory from './components/PatientHistory'
 import ScheduleVisit from './components/ScheduleVisit'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import AppointmentManagement from "./components/AppointmentManagement"
 import PatientRecords from "./components/PatientRecords"
 import SidebarLayout from './components/SideBar'
 import RadiologyReports from "./components/RadiologyReports"
@@ -38,7 +37,7 @@ const ProtectedRoute = ({ children }) => {
   return user ? children : <Navigate to="/login" replace />;
 };
 
-// Public Route Component (redirects to appointments if already logged in)
+// Public Route Component (redirects to patient-record if already logged in)
 const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
   
@@ -56,7 +55,7 @@ const PublicRoute = ({ children }) => {
     );
   }
   
-  return user ? <Navigate to="/appointments" replace /> : children;
+  return user ? <Navigate to="/patient-record" replace /> : children;
 };
 
 const AppContent = () => {
@@ -86,11 +85,6 @@ const AppContent = () => {
         </ProtectedRoute>
       } />
 
-      <Route path="/appointments" element={
-        <ProtectedRoute>
-          <AppointmentManagement />
-        </ProtectedRoute>
-      } />
       <Route path="/patient-record" element={
         <ProtectedRoute>
           <PatientRecords />
@@ -118,10 +112,10 @@ const AppContent = () => {
 
       
       {/* Default redirect */}
-      <Route path="/" element={<Navigate to="/appointments" replace />} />
+      <Route path="/" element={<Navigate to="/patient-record" replace />} />
       
       {/* Catch all route */}
-      <Route path="*" element={<Navigate to="/appointments" replace />} />
+      <Route path="*" element={<Navigate to="/patient-record" replace />} />
     </Routes>
   );
 };

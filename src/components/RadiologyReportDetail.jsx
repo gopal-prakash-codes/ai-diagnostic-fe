@@ -866,7 +866,7 @@ const RadiologyReportDetail = () => {
                                     <h2 className="text-2xl font-bold text-gray-800 mb-2">
                                         {patientData?.name || dummyReport.patient?.name || "Loading..."}
                                     </h2>
-                                    <p className="text-black text-md">
+                                    <p className="text-black text-sm">
                                         Age: <span className="font-semibold">{patientData?.age || dummyReport.patient?.age || 0}</span> • Gender: <span className="font-semibold">{patientData?.gender?.toUpperCase() || dummyReport.patient?.gender?.toUpperCase() || "N/A"}</span>
                                     </p>
                                 </div>
@@ -894,7 +894,7 @@ const RadiologyReportDetail = () => {
                         {/* Existing Reports Table */}
                         {patientReports.length > 0 && (
                             <div className="mb-6">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Existing Reports for this Patient</h3>
+                                <h3 className="text-base font-semibold text-gray-800 mb-4">Existing Reports for this Patient</h3>
                                 <div className="bg-white rounded-lg shadow-sm overflow-hidden">
                                     <table className="w-full">
                                         <thead className="bg-gray-50">
@@ -1070,7 +1070,7 @@ const RadiologyReportDetail = () => {
                         {/* Data Table */}
                         <div className="bg-white rounded-lg shadow-sm overflow-hidden mt-8">
                             <div className="px-6 py-4 bg-red-700 text-white ">
-                                <h3 className="text-lg font-semibold">Scan Records</h3>
+                                <h3 className="text-base font-semibold">Scan Records</h3>
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full">
@@ -1099,7 +1099,7 @@ const RadiologyReportDetail = () => {
                                                 <td colSpan="5" className="px-6 py-12 text-center">
                                                     <div className="text-gray-500">
                                                         <IoDocumentTextOutline className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                                                        <h3 className="text-lg font-medium mb-2">No Analysis Results Yet</h3>
+                                                        <h3 className="text-base font-medium mb-2">No Analysis Results Yet</h3>
                                                         <p className="text-sm">Upload medical images above to start analysis and see results here.</p>
                                                     </div>
                                                 </td>
@@ -1272,7 +1272,7 @@ const RadiologyReportDetail = () => {
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                         <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                             <div className="flex justify-between items-center p-6 border-b">
-                                <h2 className="text-xl font-semibold text-gray-800">
+                                <h2 className="text-lg font-semibold text-gray-800">
                                     Analysis Result - {selectedResult.fileName}
                                 </h2>
                                 <button 
@@ -1290,15 +1290,15 @@ const RadiologyReportDetail = () => {
                                     <div className="space-y-4">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="bg-gray-50 p-4 rounded-lg">
-                                                <h3 className="font-semibold text-gray-800 mb-2">Modality</h3>
-                                                <p className="text-gray-700">
+                                                <h3 className="font-semibold text-gray-800 mb-2 text-sm">Modality</h3>
+                                                <p className="text-gray-700 text-sm">
                                                     {selectedResult.data?.modality || 
                                                      selectedResult.analysisResult?.modality || 
                                                      'Not available'}
                                                 </p>
                                             </div>
                                             <div className="bg-gray-50 p-4 rounded-lg">
-                                                <h3 className="font-semibold text-gray-800 mb-2">Urgency</h3>
+                                                <h3 className="font-semibold text-gray-800 mb-2 text-sm">Urgency</h3>
                                                 <span className={`px-2 py-1 rounded-full text-sm font-medium ${
                                                     (selectedResult.data?.urgency || selectedResult.analysisResult?.urgency) === 'Emergency' ? 'bg-red-100 text-red-800' :
                                                     (selectedResult.data?.urgency || selectedResult.analysisResult?.urgency) === 'Priority' ? 'bg-yellow-100 text-yellow-800' :
@@ -1312,8 +1312,8 @@ const RadiologyReportDetail = () => {
                                         </div>
                                         
                                         <div className="bg-gray-50 p-4 rounded-lg">
-                                            <h3 className="font-semibold text-gray-800 mb-2">Findings</h3>
-                                            <p className="text-gray-700 whitespace-pre-wrap">
+                                            <h3 className="font-semibold text-gray-800 mb-2 text-sm">Findings</h3>
+                                            <p className="text-gray-700 whitespace-pre-wrap text-sm">
                                                 {selectedResult.data?.findings || 
                                                  selectedResult.analysisResult?.findings || 
                                                  'No findings available'}
@@ -1321,8 +1321,8 @@ const RadiologyReportDetail = () => {
                                         </div>
                                         
                                         <div className="bg-gray-50 p-4 rounded-lg">
-                                            <h3 className="font-semibold text-gray-800 mb-2">Diagnosis</h3>
-                                            <p className="text-gray-700 whitespace-pre-wrap">
+                                            <h3 className="font-semibold text-gray-800 mb-2 text-sm">Diagnosis</h3>
+                                            <p className="text-gray-700 whitespace-pre-wrap text-sm">
                                                 {selectedResult.data?.diagnosis || 
                                                  selectedResult.analysisResult?.diagnosis || 
                                                  'No diagnosis available'}
@@ -1330,8 +1330,8 @@ const RadiologyReportDetail = () => {
                                         </div>
                                         
                                         <div className="bg-gray-50 p-4 rounded-lg">
-                                            <h3 className="font-semibold text-gray-800 mb-2">Treatment Plan</h3>
-                                            <p className="text-gray-700 whitespace-pre-wrap">
+                                            <h3 className="font-semibold text-gray-800 mb-2 text-sm">Treatment Plan</h3>
+                                            <p className="text-gray-700 whitespace-pre-wrap text-sm">
                                                 {selectedResult.data?.treatment_plan || 
                                                  selectedResult.analysisResult?.treatmentPlan || 
                                                  'No treatment plan available'}
@@ -1339,8 +1339,8 @@ const RadiologyReportDetail = () => {
                                         </div>
                                         
                                         <div className="bg-gray-50 p-4 rounded-lg">
-                                            <h3 className="font-semibold text-gray-800 mb-2">Confidence Summary</h3>
-                                            <p className="text-gray-700 whitespace-pre-wrap">
+                                            <h3 className="font-semibold text-gray-800 mb-2 text-sm">Confidence Summary</h3>
+                                            <p className="text-gray-700 whitespace-pre-wrap text-sm">
                                                 {selectedResult.data?.confidence_summary || 
                                                  selectedResult.analysisResult?.confidenceSummary || 
                                                  'No confidence summary available'}
@@ -1349,8 +1349,8 @@ const RadiologyReportDetail = () => {
                                         
                                         {(selectedResult.data?.limitations || selectedResult.analysisResult?.limitations) && (
                                             <div className="bg-gray-50 p-4 rounded-lg">
-                                                <h3 className="font-semibold text-gray-800 mb-2">Limitations</h3>
-                                                <p className="text-gray-700 whitespace-pre-wrap">
+                                                <h3 className="font-semibold text-gray-800 mb-2 text-sm">Limitations</h3>
+                                                <p className="text-gray-700 whitespace-pre-wrap text-sm">
                                                     {selectedResult.data?.limitations || 
                                                      selectedResult.analysisResult?.limitations}
                                                 </p>
@@ -1361,8 +1361,8 @@ const RadiologyReportDetail = () => {
                                 ) : selectedResult.type === '3D' ? (
                                     <div className="space-y-4">
                                         <div className="bg-gray-50 p-4 rounded-lg">
-                                            <h3 className="font-semibold text-gray-800 mb-2">Job Status</h3>
-                                            <p className="text-gray-700">
+                                            <h3 className="font-semibold text-gray-800 mb-2 text-sm">Job Status</h3>
+                                            <p className="text-gray-700 text-sm">
                                                 Job ID: {selectedResult.jobId}<br/>
                                                 Status: {selectedResult.status || 'Processing'}<br/>
                                                 Type: 3D DICOM Analysis
@@ -1371,7 +1371,7 @@ const RadiologyReportDetail = () => {
                                         
                                         {selectedResult.statusData && (
                                             <div className="bg-gray-50 p-4 rounded-lg">
-                                                <h3 className="font-semibold text-gray-800 mb-2">Status Details</h3>
+                                                <h3 className="font-semibold text-gray-800 mb-2 text-sm">Status Details</h3>
                                                 <pre className="text-sm text-gray-600 whitespace-pre-wrap overflow-x-auto">
                                                     {JSON.stringify(selectedResult.statusData, null, 2)}
                                                 </pre>
@@ -1380,21 +1380,21 @@ const RadiologyReportDetail = () => {
                                         
                                         {selectedResult.status === 'completed' && (
                                             <div className="bg-green-50 p-4 rounded-lg">
-                                                <h3 className="font-semibold text-green-800 mb-2">Analysis Complete</h3>
-                                                <p className="text-green-700 mb-3">Your 3D DICOM analysis has been completed successfully.</p>
+                                                <h3 className="font-semibold text-green-800 mb-2 text-sm">Analysis Complete</h3>
+                                                <p className="text-green-700 mb-3 text-sm">Your 3D DICOM analysis has been completed successfully.</p>
                                             </div>
                                         )}
                                     </div>
                                 ) : selectedResult.status === 'processing' ? (
                                     <div className="text-center py-8">
                                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2EB4B4] mx-auto mb-4"></div>
-                                        <p className="text-gray-600">Analysis in progress...</p>
+                                        <p className="text-gray-600 text-sm">Analysis in progress...</p>
                                         <p className="text-sm text-gray-500 mt-2">Please wait while we process your {selectedResult.type || selectedResult.fileType} scan</p>
                                     </div>
                                 ) : selectedResult.status === 'failed' ? (
                                     <div className="text-center py-8">
                                         <div className="text-red-500 text-4xl mb-4">⚠️</div>
-                                        <p className="text-red-600 font-semibold">Analysis Failed</p>
+                                        <p className="text-red-600 font-semibold text-sm">Analysis Failed</p>
                                         <p className="text-sm text-gray-500 mt-2">
                                             {selectedResult.error || 'The analysis could not be completed. Please try uploading the file again.'}
                                         </p>
@@ -1402,7 +1402,7 @@ const RadiologyReportDetail = () => {
                                 ) : (
                                     <div className="text-center py-8">
                                         <div className="text-gray-400 text-4xl mb-4">📊</div>
-                                        <p className="text-gray-600">Analysis not yet available</p>
+                                        <p className="text-gray-600 text-sm">Analysis not yet available</p>
                                         <p className="text-sm text-gray-500 mt-2">
                                             {selectedResult.status === 'pending' ? 
                                                 'Analysis has not been started yet' : 
@@ -1413,8 +1413,8 @@ const RadiologyReportDetail = () => {
                                 
                                 {selectedResult.error && (
                                     <div className="bg-red-50 p-4 rounded-lg mt-4">
-                                        <h3 className="font-semibold text-red-800 mb-2">Error</h3>
-                                        <p className="text-red-700">{selectedResult.error}</p>
+                                        <h3 className="font-semibold text-red-800 mb-2 text-sm">Error</h3>
+                                        <p className="text-red-700 text-sm">{selectedResult.error}</p>
                                     </div>
                                 )}
                             </div>
@@ -1427,7 +1427,7 @@ const RadiologyReportDetail = () => {
                     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
                         <div className="bg-white rounded-lg max-w-6xl w-full max-h-[95vh] overflow-hidden">
                             <div className="flex justify-between items-center p-4 border-b">
-                                <h2 className="text-xl font-semibold">
+                                <h2 className="text-lg font-semibold">
                                     {selectedImage.fileName} ({selectedImage.fileType})
                                 </h2>
                                 <button 
@@ -1469,7 +1469,7 @@ const RadiologyReportDetail = () => {
                             </div>
                             
                             <div className="text-center">
-                                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                                <h3 className="text-base font-medium text-gray-900 mb-2">
                                     Delete {deleteModal.type === 'report' ? 'Report' : 'Scan Record'}?
                                 </h3>
                                 <p className="text-sm text-gray-500 mb-6">

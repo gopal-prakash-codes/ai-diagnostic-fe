@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { Link } from 'react-router-dom';
-import { FaCalendarPlus } from "react-icons/fa";
 import { MdOutlineContactPage } from "react-icons/md";
 import { HiClipboardList } from "react-icons/hi";
 import { useLocation } from 'react-router-dom';
@@ -38,13 +37,6 @@ export default function SidebarLayout({ isOpen, children }) {
 
         {/* Sidebar items */}
         <nav className="mt-4 pl-2 sm:pl-3 flex flex-col gap-y-6">
-          <Link to={"/appointments"} className={`${location.pathname === "/appointments" ? `text-white` : `text-gray-300 hover:text-white`} flex items-center justify-center sm:justify-start w-full font-[family-name:var(--font-gabarito)] transition-colors duration-200`}>
-            <div className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg transition-transform duration-200 ${location.pathname === "/appointments" ? 'bg-gradient-to-r from-red-500 to-black' : 'hover:-translate-y-0.5'}`}>
-              <span className='text-xl'><FaCalendarPlus /></span>
-              {isOpen && <span className="text-sm font-medium">Appointments</span>}
-            </div>
-          </Link>
-
           <Link to={"/patient-record"} className={`${location.pathname === "/patient-record" ? `text-white` : `text-gray-300 hover:text-white`} flex items-center justify-center sm:justify-start w-full font-[family-name:var(--font-gabarito)] transition-colors duration-200`}>
             <div className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg transition-transform duration-200 ${location.pathname === "/patient-record" ? 'bg-gradient-to-r from-red-500 to-black' : 'hover:-translate-y-0.5'}`}>
               <span className='text-xl'><MdOutlineContactPage /></span>

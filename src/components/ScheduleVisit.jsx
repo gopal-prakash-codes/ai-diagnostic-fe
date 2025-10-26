@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+  import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { analyzeDiagnosis } from '../api/api';
@@ -397,7 +397,7 @@ function ScheduleVisit() {
                 </span>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">{patient.name}</h1>
+                <h1 className="text-2xl font-bold text-gray-900">{patient.name}</h1>
                 <div className="flex items-center space-x-3">
                   <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full font-medium">
                     In Progress
@@ -449,7 +449,7 @@ function ScheduleVisit() {
               <CardHeader className="bg-red-700 px-4 py-3 rounded-t-xl">
                 <div className="flex items-center space-x-2">
                   <User className="w-4 h-4 text-white" />
-                  <span className="text-white font-semibold text-sm">Patient Information</span>
+                  <span className="text-white font-semibold text-base">Patient Information</span>
                 </div>
               </CardHeader>
               <CardContent className="p-4">
@@ -474,7 +474,7 @@ function ScheduleVisit() {
               <CardHeader className="bg-red-700 px-4 py-3 rounded-t-xl">
                 <div className="flex items-center space-x-2">
                   <AlertTriangle className="w-4 h-4 text-white" />
-                  <span className="text-white font-semibold text-sm">Allergies</span>
+                  <span className="text-white font-semibold text-base">Allergies</span>
                 </div>
               </CardHeader>
               <CardContent className="p-4">
@@ -504,16 +504,16 @@ function ScheduleVisit() {
           </div>
 
           {/* Bottom Row - Transcription and Diagnosis */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
             {/* Transcription */}
-            <Card className="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col w-full h-96">
+            <Card className="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col w-full">
               <CardHeader className="bg-red-700 px-4 py-3 rounded-t-xl">
                 <div className="flex items-center space-x-2">
                   <Mic className="w-5 h-5 text-white" />
                   <span className="text-white font-semibold text-base">Transcription</span>
                 </div>
               </CardHeader>
-              <CardContent className="p-4 flex-1 flex flex-col min-h-0 overflow-hidden">
+              <CardContent className="p-4 flex-1 flex flex-col min-h-[300px]">
                 <ConversationDisplay 
                   conversation={conversation}
                   isRecording={isRecording}
@@ -523,14 +523,14 @@ function ScheduleVisit() {
             </Card>
 
             {/* Diagnosis & Next Steps */}
-            <Card className="bg-white border border-gray-200 rounded-xl shadow-sm">
+            <Card className="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col w-full">
               <CardHeader className="bg-red-700 px-4 py-3 rounded-t-xl">
                 <div className="flex items-center space-x-2">
                   <ActivityIcon className="w-5 h-5 text-white" />
                   <span className="text-white font-semibold text-base">Diagnosis & Next Steps</span>
                 </div>
               </CardHeader>
-              <CardContent className="p-4 space-y-4">
+              <CardContent className="p-4 space-y-4 flex-1 min-h-[300px]">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Symptoms:

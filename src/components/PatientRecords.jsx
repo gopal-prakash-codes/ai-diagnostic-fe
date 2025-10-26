@@ -134,12 +134,12 @@ const PatientRecords = () => {
           {/* Header */}
 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 pb-1 sm:pb-2">Patient Record & EMR</h1>
-              <p className="text-gray-500 text-md">Electronic Medical Records Management</p>
+              <h1 className="text-2xl font-bold text-gray-800 pb-1 sm:pb-2">Patient Record & EMR</h1>
+              <p className="text-gray-500 text-sm">Electronic Medical Records Management</p>
             </div>
             <button 
               onClick={() => setShowCreatePatient(true)}
-  className="w-full sm:w-auto bg-[#FAFAFA] text-[#172B4C] px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-100 transition-colors"
+  className="w-full sm:w-auto bg-[#FAFAFA] text-[#172B4C] px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-100 transition-colors text-sm"
             >
               + New Record
             </button>
@@ -148,7 +148,7 @@ const PatientRecords = () => {
           {/* Patient Records Card */}
           <div className="bg-white rounded-lg shadow">
             {/* Card Header */}
-            <div className="bg-red-700 px-4 py-3 text-white font-semibold text-lg rounded-t-lg flex items-center justify-between">
+            <div className="bg-red-700 px-4 py-3 text-white font-semibold text-base rounded-t-lg flex items-center justify-between">
               <span>Patient Records</span>
               <span className="text-sm font-normal opacity-90">
                 {loading ? 'Loading...' : `${patients.length} patients`}
@@ -160,12 +160,12 @@ const PatientRecords = () => {
               {loading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div>
-                  <span className="ml-3 text-gray-600">Loading patient records...</span>
+                  <span className="ml-3 text-gray-600 text-sm">Loading patient records...</span>
                 </div>
               ) : patients.length === 0 ? (
                 <div className="text-center py-12">
-                  <div className="text-gray-400 text-lg mb-2">No patient records found</div>
-                  <p className="text-gray-500">Create your first patient record to get started</p>
+                  <div className="text-gray-400 text-base mb-2">No patient records found</div>
+                  <p className="text-gray-500 text-sm">Create your first patient record to get started</p>
                 </div>
               ) : (
                 patients.map((patient, index) => {
@@ -190,7 +190,7 @@ const PatientRecords = () => {
                           }}
                         />
                         <div>
-                          <div className="font-semibold text-gray-800">
+                          <div className="font-semibold text-gray-800 text-sm">
                             {patient.name}
                           </div>
                           <div className="text-sm text-gray-500">

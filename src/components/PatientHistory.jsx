@@ -365,7 +365,7 @@ function VisitHistoryCards({ diagnoses, selectedDate, onClearFilter }) {
           {/* Visit Info */}
           <div className="flex flex-col sm:flex-row justify-between items-start mb-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              <h3 className="text-base font-semibold text-gray-900 mb-1">
                 {new Date(currentSession.createdAt).toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: '2-digit',
@@ -706,7 +706,7 @@ function PatientHistory() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">{patient.name}</h1>
-                  <p className="text-gray-600">Complete Medical History And Visit</p>
+                  <p className="text-gray-600 text-sm">Complete Medical History And Visit</p>
                 </div>
               </div>
 

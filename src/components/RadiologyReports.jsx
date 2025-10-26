@@ -115,13 +115,13 @@ const RadiologyReports = () => {
           {/* Header */}
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 pb-2">Radiology Reports</h1>
+              <h1 className="text-2xl font-bold text-gray-800 pb-2">Radiology Reports</h1>
             </div>
           </div>
 
           {/* Reports Card */}
           <div className="bg-white rounded-lg shadow">
-            <div className="px-4 py-3 bg-red-700 text-white font-semibold text-lg rounded-t-lg">
+            <div className="px-4 py-3 bg-red-700 text-white font-semibold text-base rounded-t-lg">
               Recent Radiology Reports ({reports.length})
             </div>
 
@@ -130,7 +130,7 @@ const RadiologyReports = () => {
               {reports.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <IoIosFlask className="text-4xl mx-auto mb-4 opacity-50" />
-                  <p>No radiology reports found</p>
+                  <p className="text-sm">No radiology reports found</p>
                 </div>
               ) : (
                 reports.map((report) => (
@@ -139,7 +139,7 @@ const RadiologyReports = () => {
                     <div className="flex-1 flex flex-wrap items-center gap-3">
                       <img src={report.avatar} alt="avatar" className="w-15 h-15 rounded-full" />
                       <div>
-                        <div className="font-semibold text-md text-[#172B4C] flex items-center gap-2">
+                        <div className="font-semibold text-sm text-[#172B4C] flex items-center gap-2">
                           {report.name}
                           {report.alert && (
                             <span className="text-xs px-2 py-1 bg-[#FF5B61] text-white rounded-md font-semibold">
