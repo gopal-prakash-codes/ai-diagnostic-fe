@@ -180,9 +180,13 @@ const Enhanced3DViewer = ({
 
   // Function to extract ZIP file and find DICOM files
   const extractZipFile = async (zipUrl) => {
+    const toastId = toast.loading('Preparing ZIP download...', {
+      autoClose: false,
+      closeButton: false
+    });
+    
     try {
       setIsLoading(true);
-      toast.info('Extracting ZIP file...');
 
       // Fetch the ZIP file with retry logic
       let response;
@@ -212,9 +216,15 @@ const Enhanced3DViewer = ({
             throw new Error(`Failed to fetch ZIP file after ${maxRetries} attempts: ${fetchError.message}`);
           }
           
+          // Update toast for retry
+          toast.update(toastId, {
+            render: `🔄 Retrying ZIP download... (${retryCount}/${maxRetries})`,
+            type: 'info',
+            isLoading: true
+          });
+          
           // Wait before retry (exponential backoff)
           await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-          toast.info(`Retrying ZIP download... (${retryCount}/${maxRetries})`);
         }
       }
 
@@ -228,6 +238,8 @@ const Enhanced3DViewer = ({
         const reader = response.body.getReader();
         const chunks = [];
         let receivedLength = 0;
+        let lastUpdate = 0;
+        const updateThrottle = 200; // Update toast max every 200ms
 
         while (true) {
           const { done, value } = await reader.read();
@@ -237,12 +249,30 @@ const Enhanced3DViewer = ({
           chunks.push(value);
           receivedLength += value.length;
           
-          // Update progress
-          const progress = Math.round((receivedLength / totalSize) * 100);
-          toast.info(`Downloading ZIP file... ${progress}%`);
+          // Throttle toast updates to avoid UI jank
+          const now = Date.now();
+          if (now - lastUpdate > updateThrottle || receivedLength === totalSize) {
+            const progress = Math.round((receivedLength / totalSize) * 100);
+            const loadedMB = (receivedLength / (1024 * 1024)).toFixed(1);
+            const totalMB = (totalSize / (1024 * 1024)).toFixed(1);
+            
+            toast.update(toastId, {
+              render: `📥 Downloading ZIP: ${progress}% (${loadedMB}/${totalMB} MB)`,
+              type: 'info',
+              isLoading: true
+            });
+            
+            lastUpdate = now;
+          }
         }
 
         // Combine chunks
+        toast.update(toastId, {
+          render: '📦 Processing ZIP data...',
+          type: 'info',
+          isLoading: true
+        });
+        
         zipData = new Uint8Array(receivedLength);
         let position = 0;
         for (const chunk of chunks) {
@@ -251,6 +281,11 @@ const Enhanced3DViewer = ({
         }
       } else {
         // Fallback for unknown content length
+        toast.update(toastId, {
+          render: '📥 Downloading ZIP file...',
+          type: 'info',
+          isLoading: true
+        });
         zipData = await response.arrayBuffer();
       }
       const zip = new JSZip();
@@ -331,7 +366,14 @@ const Enhanced3DViewer = ({
       setIsZipFile(true);
       setCurrentImageIndex(0);
 
-      toast.success(`Extracted ${allFiles.length} files from ZIP archive`);
+      // Update toast to success
+      toast.update(toastId, {
+        render: `✅ Extracted ${allFiles.length} files from ZIP archive`,
+        type: 'success',
+        isLoading: false,
+        autoClose: 3000,
+        closeButton: true
+      });
       
       // Load the first file
       if (allFiles.length > 0) {
@@ -341,18 +383,28 @@ const Enhanced3DViewer = ({
     } catch (err) {
       console.error('Error extracting ZIP file:', err);
       
+      // Update toast to error
+      let errorMessage = 'Failed to extract ZIP file';
+      
       // Check if it's a network/download error
       if (err.message.includes('Failed to fetch') || 
           err.message.includes('ERR_CONTENT_LENGTH_MISMATCH') ||
           err.message.includes('HTTP 403') ||
           err.message.includes('HTTP 404')) {
         
+        errorMessage = 'ZIP file download failed - please try again';
         setError(`ZIP file download failed: The file may be expired, corrupted, or temporarily unavailable. Please try refreshing the page or contact support if the issue persists.`);
-        toast.error('ZIP file download failed - please try again');
       } else {
         setError(`Failed to extract ZIP file: ${err.message}`);
-        toast.error('Failed to extract ZIP file');
       }
+      
+      toast.update(toastId, {
+        render: `❌ ${errorMessage}`,
+        type: 'error',
+        isLoading: false,
+        autoClose: 5000,
+        closeButton: true
+      });
       
       setIsLoading(false);
     }

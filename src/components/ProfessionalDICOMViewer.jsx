@@ -43,11 +43,14 @@ const ProfessionalDICOMViewer = ({
   const [preloadedImages, setPreloadedImages] = useState(new Map());
   const [isPreloading, setIsPreloading] = useState(false);
   const [preloadProgress, setPreloadProgress] = useState(0);
+  const [lazyLoadRange, setLazyLoadRange] = useState({ start: 0, end: 10 }); 
   const scrollTimeoutRef = useRef(null); // Stores last scroll timestamp for throttling
   const loadingRef = useRef(false);
   const currentIndexRef = useRef(0); // Track current index to avoid stale closures
   const navigationSetupRef = useRef(false); // Track if navigation is already set up
   const eventListenersRef = useRef([]); // Track event listeners for cleanup
+  const lazyLoadQueueRef = useRef([]); 
+  const isLazyLoadingRef = useRef(false); 
 
   
   const mainViewportRef = useRef(null);
@@ -218,22 +221,90 @@ const ProfessionalDICOMViewer = ({
     }
   };
 
-  // Function to extract ZIP file and get all medical images (DICOM and regular images)
+  // Function to extract ZIP file and get all medical images (DICOM and regular images) - OPTIMIZED
   const extractZipFile = async (zipUrl) => {
+    // Create a single toast that we'll update
+    const toastId = toast.loading('Preparing to download...', {
+      autoClose: false,
+      closeButton: false
+    });
+    
     try {
-      toast.info('Processing ZIP file...');
-      
+      // Fetch with progress tracking
       const response = await fetch(zipUrl);
       if (!response.ok) {
         throw new Error(`Failed to fetch ZIP file: ${response.status}`);
       }
 
-      const zipData = await response.arrayBuffer();
+      // Get content length for progress
+      const contentLength = response.headers.get('content-length');
+      const total = contentLength ? parseInt(contentLength, 10) : 0;
+      
+      let loaded = 0;
+      const reader = response.body.getReader();
+      const chunks = [];
+
+      // Update toast with initial download status
+      toast.update(toastId, {
+        render: 'Downloading ZIP: 0%',
+        type: 'info',
+        isLoading: true
+      });
+
+      // Stream download with progress (throttled updates)
+      let lastUpdate = 0;
+      const updateThrottle = 200; // Update toast max every 200ms
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        chunks.push(value);
+        loaded += value.length;
+        
+        // Throttle toast updates to avoid UI jank
+        const now = Date.now();
+        if (total > 0 && (now - lastUpdate > updateThrottle || loaded === total)) {
+          const progress = Math.round((loaded / total) * 100);
+          const loadedMB = (loaded / (1024 * 1024)).toFixed(1);
+          const totalMB = (total / (1024 * 1024)).toFixed(1);
+          
+          // Update the same toast with progress
+          toast.update(toastId, {
+            render: `📥 Downloading: ${progress}% (${loadedMB}/${totalMB} MB)`,
+            type: 'info',
+            isLoading: true
+          });
+          
+          lastUpdate = now;
+        }
+      }
+
+      // Combine chunks
+      toast.update(toastId, {
+        render: '📦 Processing ZIP file...',
+        type: 'info',
+        isLoading: true
+      });
+      
+      const zipData = new Uint8Array(loaded);
+      let position = 0;
+      for (const chunk of chunks) {
+        zipData.set(chunk, position);
+        position += chunk.length;
+      }
+
+      toast.update(toastId, {
+        render: '📂 Extracting files...',
+        type: 'info',
+        isLoading: true
+      });
+      
       const zip = new JSZip();
       const zipContents = await zip.loadAsync(zipData);
 
-      const imageFiles = [];
-      
+      // First pass: identify medical image files (don't extract yet)
+      const fileEntries = [];
       for (const [filename, file] of Object.entries(zipContents.files)) {
         if (file.dir) continue;
 
@@ -251,133 +322,206 @@ const ProfessionalDICOMViewer = ({
                                filenameLower.endsWith('.webp');
         
         if (isDicom || isRegularImage) {
-          try {
-            const fileData = await file.async('arraybuffer');
-            
-            let blobType = 'application/dicom';
-            let fileType = 'dicom';
-            
-            // Determine file type
-            if (filenameLower.endsWith('.png')) {
-              blobType = 'image/png';
-              fileType = 'image';
-            } else if (filenameLower.endsWith('.jpg') || filenameLower.endsWith('.jpeg')) {
-              blobType = 'image/jpeg';
-              fileType = 'image';
-            } else if (filenameLower.endsWith('.webp')) {
-              blobType = 'image/webp';
-              fileType = 'image';
-            }
-            
-            const blob = new Blob([fileData], { type: blobType });
-            const blobUrl = URL.createObjectURL(blob);
-            
-            imageFiles.push({
-              filename,
-              url: blobUrl,
-              type: fileType,
-              size: fileData.byteLength
-            });
-          } catch (err) {
-            console.warn(`Failed to extract ${filename}:`, err);
+          let blobType = 'application/dicom';
+          let fileType = 'dicom';
+          
+          if (filenameLower.endsWith('.png')) {
+            blobType = 'image/png';
+            fileType = 'image';
+          } else if (filenameLower.endsWith('.jpg') || filenameLower.endsWith('.jpeg')) {
+            blobType = 'image/jpeg';
+            fileType = 'image';
+          } else if (filenameLower.endsWith('.webp')) {
+            blobType = 'image/webp';
+            fileType = 'image';
           }
+          
+          fileEntries.push({ filename, file, blobType, fileType });
         }
       }
 
-      if (imageFiles.length === 0) {
+      if (fileEntries.length === 0) {
         throw new Error('No medical image files found in ZIP archive');
       }
 
-      // Sort files by name with natural numeric sorting (CT000001 < CT000002 < CT000010)
-      imageFiles.sort((a, b) => {
-        // Extract numbers from filenames for proper numeric sorting
+      // Sort entries by filename (before extracting)
+      fileEntries.sort((a, b) => {
         const numA = a.filename.match(/\d+/g);
         const numB = b.filename.match(/\d+/g);
         
         if (numA && numB) {
-          // Compare each number sequence
           for (let i = 0; i < Math.min(numA.length, numB.length); i++) {
             const diff = parseInt(numA[i]) - parseInt(numB[i]);
             if (diff !== 0) return diff;
           }
         }
         
-        // Fallback to alphabetical if no numbers or numbers are equal
         return a.filename.localeCompare(b.filename, undefined, { numeric: true, sensitivity: 'base' });
       });
+
+      // Extract ONLY first 10 files immediately, rest will be lazy loaded
+      const imageFiles = [];
+      const initialBatchSize = 10;
       
-      console.log('Sorted files:', imageFiles.map(f => f.filename));
+      for (let i = 0; i < Math.min(initialBatchSize, fileEntries.length); i++) {
+        const entry = fileEntries[i];
+        
+        // Update progress
+        toast.update(toastId, {
+          render: `📂 Extracting initial files: ${i + 1}/${Math.min(initialBatchSize, fileEntries.length)}`,
+          type: 'info',
+          isLoading: true
+        });
+        
+        try {
+          const fileData = await entry.file.async('arraybuffer');
+          const blob = new Blob([fileData], { type: entry.blobType });
+          const blobUrl = URL.createObjectURL(blob);
+          
+          imageFiles.push({
+            filename: entry.filename,
+            url: blobUrl,
+            type: entry.fileType,
+            size: fileData.byteLength,
+            extracted: true
+          });
+        } catch (err) {
+          console.warn(`Failed to extract ${entry.filename}:`, err);
+        }
+      }
+      
+      // Add remaining files as placeholders (will be extracted on-demand)
+      for (let i = initialBatchSize; i < fileEntries.length; i++) {
+        const entry = fileEntries[i];
+        imageFiles.push({
+          filename: entry.filename,
+          url: null, // Will be extracted later
+          type: entry.fileType,
+          size: 0,
+          extracted: false,
+          zipFile: entry.file, // Keep reference for lazy extraction
+          blobType: entry.blobType
+        });
+      }
+      
+      console.log(`✅ Extracted ${Math.min(initialBatchSize, fileEntries.length)} files, ${Math.max(0, fileEntries.length - initialBatchSize)} pending lazy extraction`);
       
       setExtractedFiles(imageFiles);
       setIsZipFile(true);
       setTotalImages(imageFiles.length);
       setCurrentImageIndex(0);
-
-      const dicomCount = imageFiles.filter(f => f.type === 'dicom').length;
-      const imageCount = imageFiles.filter(f => f.type === 'image').length;
       
-      toast.success(`ZIP extracted: ${imageFiles.length} files`);
+      // Update toast to success
+      toast.update(toastId, {
+        render: `✅ ZIP ready: ${imageFiles.length} files (${Math.min(initialBatchSize, fileEntries.length)} loaded)`,
+        type: 'success',
+        isLoading: false,
+        autoClose: 3000,
+        closeButton: true
+      });
+      
       return imageFiles;
 
     } catch (err) {
       console.error('Error extracting ZIP file:', err);
+      
+      // Update toast to error
+      toast.update(toastId, {
+        render: `❌ Failed to extract ZIP: ${err.message}`,
+        type: 'error',
+        isLoading: false,
+        autoClose: 5000,
+        closeButton: true
+      });
+      
       throw err;
     }
   };
 
-  // Preload all medical images for instant navigation (OHIF behavior)
-  const preloadAllImages = async (files) => {
-    if (files.length === 0) return;
+  // Lazy load images in range (only visible + buffer) - handles ZIP lazy extraction
+  const lazyLoadImagesInRange = async (files, centerIndex, rangeSize = 10) => {
+    if (files.length === 0 || isLazyLoadingRef.current) return;
     
-    setIsPreloading(true);
-    const preloadMap = new Map();
+    isLazyLoadingRef.current = true;
     
-    
-    for (let i = 0; i < files.length; i++) {
-      try {
-        const file = files[i];
+    try {
+      // Calculate range to load (center ± rangeSize/2)
+      const halfRange = Math.floor(rangeSize / 2);
+      const start = Math.max(0, centerIndex - halfRange);
+      const end = Math.min(files.length, centerIndex + halfRange + 1);
+      
+      console.log(`📥 Lazy loading images ${start + 1} to ${end} (center: ${centerIndex + 1})`);
+      
+      // Load images in parallel (batch of 5 at a time)
+      const batchSize = 5;
+      const preloadMap = new Map(preloadedImages);
+      
+      for (let i = start; i < end; i += batchSize) {
+        const batchEnd = Math.min(i + batchSize, end);
+        const batchPromises = [];
         
-        if (file.type === 'dicom') {
-          // Preload DICOM using Cornerstone
-          const imageId = `wadouri:${file.url}`;
-          const image = await cornerstone.loadImage(imageId);
-          preloadMap.set(i, { imageId, image, loaded: true, type: 'dicom' });
-        } else if (file.type === 'image') {
-          // Preload regular image
-          const img = new Image();
-          img.crossOrigin = 'anonymous'; // Handle CORS for S3 images
-          await new Promise((resolve, reject) => {
-            img.onload = () => {
-              console.log(`Image loaded successfully: ${file.filename}`);
-              resolve();
-            };
-            img.onerror = (e) => {
-              console.error(`Image load error for ${file.filename}:`, e);
-              reject(new Error(`Failed to load image: ${e.type || 'unknown error'}`));
-            };
-            img.src = file.url;
-          });
-          preloadMap.set(i, { image: img, loaded: true, type: 'image', url: file.url });
+        for (let j = i; j < batchEnd; j++) {
+          // Skip if already loaded
+          if (preloadMap.has(j) && preloadMap.get(j).loaded) {
+            continue;
+          }
+          
+          const file = files[j];
+          const index = j;
+          
+          const loadPromise = (async () => {
+            try {
+              // If file hasn't been extracted from ZIP yet, extract it now
+              if (!file.extracted && file.zipFile) {
+                console.log(`📦 Extracting ${file.filename} from ZIP on-demand...`);
+                const fileData = await file.zipFile.async('arraybuffer');
+                const blob = new Blob([fileData], { type: file.blobType });
+                const blobUrl = URL.createObjectURL(blob);
+                
+                // Update the file object
+                files[index].url = blobUrl;
+                files[index].extracted = true;
+                files[index].size = fileData.byteLength;
+              }
+              
+              if (file.type === 'dicom') {
+                const imageId = `wadouri:${files[index].url}`;
+                const image = await cornerstone.loadImage(imageId);
+                preloadMap.set(index, { imageId, image, loaded: true, type: 'dicom' });
+              } else if (file.type === 'image') {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                await new Promise((resolve, reject) => {
+                  img.onload = () => resolve();
+                  img.onerror = (e) => reject(new Error(`Failed to load image: ${e.type}`));
+                  img.src = files[index].url;
+                });
+                preloadMap.set(index, { image: img, loaded: true, type: 'image', url: files[index].url });
+              }
+              console.log(`✅ Lazy loaded: ${index + 1}/${files.length}`);
+            } catch (err) {
+              console.error(`❌ Failed to lazy load ${file.filename}:`, err.message);
+              preloadMap.set(index, { loaded: false, error: err.message });
+            }
+          })();
+          
+          batchPromises.push(loadPromise);
         }
         
-        const progress = Math.round(((i + 1) / files.length) * 100);
-        setPreloadProgress(progress);
-        
-        console.log(`✅ Preloaded ${i + 1}/${files.length}: ${file.filename} (${file.type})`);
-      } catch (err) {
-        const errorMsg = err?.message || String(err) || 'Unknown error';
-        console.error(`❌ Failed to preload ${files[i]?.filename}:`, errorMsg);
-        preloadMap.set(i, { loaded: false, error: errorMsg });
+        // Wait for batch to complete
+        await Promise.all(batchPromises);
       }
+      
+      setPreloadedImages(preloadMap);
+      const loadedCount = Array.from(preloadMap.values()).filter(v => v.loaded).length;
+      setPreloadProgress(Math.round((loadedCount / files.length) * 100));
+      
+    } finally {
+      isLazyLoadingRef.current = false;
     }
-    
-    setPreloadedImages(preloadMap);
-    setIsPreloading(false);
-    
-    return preloadMap;
   };
 
-  // Function to load current image into main viewport
+  // Function to load current image into main viewport (with lazy extraction support)
   const loadCurrentImageIntoViewport = async (imageIndex = null) => {
     if (extractedFiles.length === 0) {
       console.warn('⚠️ No extracted files available');
@@ -403,7 +547,20 @@ const ProfessionalDICOMViewer = ({
     }
 
     try {
-      await loadDicomIntoViewport(currentFile.url, mainViewportRef.current, 'Main View', indexToLoad);
+      // If file hasn't been extracted from ZIP yet, extract it now
+      if (!currentFile.extracted && currentFile.zipFile) {
+        console.log(`📦 Extracting ${currentFile.filename} from ZIP on-demand...`);
+        const fileData = await currentFile.zipFile.async('arraybuffer');
+        const blob = new Blob([fileData], { type: currentFile.blobType });
+        const blobUrl = URL.createObjectURL(blob);
+        
+        // Update the file object
+        extractedFiles[indexToLoad].url = blobUrl;
+        extractedFiles[indexToLoad].extracted = true;
+        extractedFiles[indexToLoad].size = fileData.byteLength;
+      }
+      
+      await loadDicomIntoViewport(extractedFiles[indexToLoad].url, mainViewportRef.current, 'Main View', indexToLoad);
       console.log(`✅ Successfully loaded image ${indexToLoad + 1}`);
     } catch (error) {
       console.error(`❌ Failed to load image ${indexToLoad + 1}:`, error);
@@ -423,6 +580,13 @@ const ProfessionalDICOMViewer = ({
     try {
       // Pass the index directly to avoid race condition
       await loadCurrentImageIntoViewport(index);
+      
+      // Trigger lazy loading of nearby images in background
+      if (extractedFiles.length > 1) {
+        setTimeout(() => {
+          lazyLoadImagesInRange(extractedFiles, index, 20);
+        }, 100);
+      }
     } finally {
       loadingRef.current = false;
     }
@@ -723,7 +887,7 @@ const ProfessionalDICOMViewer = ({
           console.error('Loading timeout - viewer taking too long to load');
           setError('Viewer is taking too long to load. Please check your network connection and try again.');
           setIsLoading(false);
-        }, 500000); 
+        }, 60000); // Reduced to 60 seconds
 
         // Initialize Cornerstone
         initializeCornerstone();
@@ -757,26 +921,25 @@ const ProfessionalDICOMViewer = ({
           setTotalImages(1);
           setExtractedFiles(filesToProcess);
           setIsZipFile(false);
-          
         }
 
-        // PRELOAD ALL IMAGES for instant navigation (OHIF behavior)
+        // SHOW FIRST IMAGE IMMEDIATELY - Don't wait for everything to load!
         if (filesToProcess.length > 0) {
-          try {
-            await preloadAllImages(filesToProcess);
-          } catch (preloadError) {
-            console.warn('Preloading failed, continuing with regular loading:', preloadError);
-          }
-          
           clearTimeout(loadingTimeout);
-          setIsLoading(false);
           
-          // Load first image immediately after preloading
+          // Load first image immediately
           const loadFirstImage = async () => {
             try {
-              console.log('🖼️ Loading first image...');
+              console.log('🖼️ Loading first image immediately...');
               await loadCurrentImageIntoViewport(0);
               console.log('✅ First image loaded successfully');
+              setIsLoading(false);
+              if (filesToProcess.length > 1) {
+                console.log('📥 Starting background lazy loading...');
+                setTimeout(() => {
+                  lazyLoadImagesInRange(filesToProcess, 0, 20);
+                }, 500);
+              }
             } catch (loadError) {
               console.error('❌ Failed to load first image:', loadError);
               setError(`Failed to load first image: ${loadError.message}`);
@@ -784,22 +947,22 @@ const ProfessionalDICOMViewer = ({
             }
           };
           
-          // Try to load immediately, then retry if needed
           loadFirstImage();
           
           // Fallback retry mechanism
           const checkAndLoadImage = () => {
-            if (mainViewportRef.current && extractedFiles.length > 0) {
+            if (mainViewportRef.current && extractedFiles.length > 0 && isLoading) {
               loadCurrentImageIntoViewport(0).then(() => {
                 console.log('✅ First image loaded via retry mechanism');
+                setIsLoading(false);
               }).catch((loadError) => {
                 console.error('Failed to load first image via retry:', loadError);
               });
-            } else {
+            } else if (!mainViewportRef.current && extractedFiles.length > 0) {
               setTimeout(checkAndLoadImage, 100);
             }
           };
-          setTimeout(checkAndLoadImage, 500);
+          setTimeout(checkAndLoadImage, 200);
         } else {
           console.error('No files to process - this should not happen');
           setError('No valid files found to display');
@@ -810,7 +973,6 @@ const ProfessionalDICOMViewer = ({
       } catch (err) {
         console.error('Error loading OHIF viewer:', err);
         setError(`Failed to load professional viewer: ${err.message}`);
-        clearTimeout(loadingTimeout);
         setIsLoading(false);
         toast.error('Failed to load viewer');
       }
@@ -821,7 +983,12 @@ const ProfessionalDICOMViewer = ({
     // Cleanup
     return () => {
       cleanupNavigationListeners();
-      if (mainViewportRef.current) cornerstone.disable(mainViewportRef.current);
+      if (mainViewportRef.current) {
+        try {
+          cornerstone.disable(mainViewportRef.current);
+        } catch (e) {
+        }
+      }
       if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
     };
   }, [dicomUrl]);
