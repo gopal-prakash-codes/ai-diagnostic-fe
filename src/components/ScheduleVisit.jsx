@@ -473,7 +473,7 @@ function ScheduleVisit() {
             <Card className="bg-white border border-gray-200 rounded-xl shadow-sm">
               <CardHeader className="bg-red-700 px-4 py-3 rounded-t-xl">
                 <div className="flex items-center space-x-2">
-                  <AlertTriangle className="w-4 h-4 text-white" />
+                  <AlertTriangle className="w-5 h-5 text-white" />
                   <span className="text-white font-semibold text-base">Allergies</span>
                 </div>
               </CardHeader>
@@ -486,7 +486,7 @@ function ScheduleVisit() {
                     <div className="space-y-1 w-full">
                       {diagnosis.allergies.map((allergy, idx) => (
                         <div key={idx} className="flex items-center">
-                          <div className="w-4 h-4 bg-gray-400 rounded-full flex items-center justify-center mr-3">
+                          <div className="w-5 h-5 bg-gray-400 rounded-full flex items-center justify-center mr-3">
                             <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
@@ -504,7 +504,7 @@ function ScheduleVisit() {
           </div>
 
           {/* Bottom Row - Transcription and Diagnosis */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
             {/* Transcription */}
             <Card className="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col w-full">
               <CardHeader className="bg-red-700 px-4 py-3 rounded-t-xl">
