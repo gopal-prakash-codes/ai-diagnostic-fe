@@ -540,7 +540,6 @@ const RadiologyReportDetail = () => {
                         
                 toast.success('3D Analysis started successfully!');
                         
-                        // Start polling for completion (check every 5 seconds for 3D)
                         const pollForCompletion = setInterval(async () => {
                             try {
                                 const reportResponse = await radiologyApi.getReport(currentReport.reportId);
@@ -590,11 +589,12 @@ const RadiologyReportDetail = () => {
                             } catch (pollError) {
                                 console.error('3D Polling error:', pollError);
                             }
-                        }, 20000);
+                        }, 30000);
                         
+                        // Stop polling after 30 minutes to match backend (60 x 30s)
                         setTimeout(() => {
                             clearInterval(pollForCompletion);
-                        }, 1000000);
+                        }, 1800000);
                     }
                 }
             }
