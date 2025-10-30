@@ -590,12 +590,11 @@ const RadiologyReportDetail = () => {
                             } catch (pollError) {
                                 console.error('3D Polling error:', pollError);
                             }
-                        }, 5000);
+                        }, 20000);
                         
-                        // Stop polling after 15 minutes (3D takes longer)
                         setTimeout(() => {
                             clearInterval(pollForCompletion);
-                        }, 900000);
+                        }, 1000000);
                     }
                 }
             }
