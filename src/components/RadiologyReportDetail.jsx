@@ -1359,29 +1359,54 @@ const RadiologyReportDetail = () => {
                                     </div>
                                 ) : selectedResult.type === '3D' ? (
                                     <div className="space-y-4">
-                                        <div className="bg-gray-50 p-4 rounded-lg">
-                                            <h3 className="font-semibold text-gray-800 mb-2 text-sm">Job Status</h3>
-                                            <p className="text-gray-700 text-sm">
-                                                Job ID: {selectedResult.jobId}<br/>
-                                                Status: {selectedResult.status || 'Processing'}<br/>
-                                                Type: 3D DICOM Analysis
-                                            </p>
-                                        </div>
-                                        
-                                        {selectedResult.statusData && (
-                                            <div className="bg-gray-50 p-4 rounded-lg">
-                                                <h3 className="font-semibold text-gray-800 mb-2 text-sm">Status Details</h3>
-                                                <pre className="text-sm text-gray-600 whitespace-pre-wrap overflow-x-auto">
-                                                    {JSON.stringify(selectedResult.statusData, null, 2)}
-                                                </pre>
-                                            </div>
-                                        )}
-                                        
                                         {selectedResult.status === 'completed' && (
-                                            <div className="bg-green-50 p-4 rounded-lg">
-                                                <h3 className="font-semibold text-green-800 mb-2 text-sm">Analysis Complete</h3>
-                                                <p className="text-green-700 mb-3 text-sm">Your 3D DICOM analysis has been completed successfully.</p>
-                                            </div>
+                                            (selectedResult.analysisResult?.rawData?.report?.organ_analysis) && (
+                                                <div className="bg-gray-50 p-4 rounded-lg">
+                                                    <h3 className="font-semibold text-gray-800 mb-2 text-sm">Lesion Summary</h3>
+                                                    {(() => {
+                                                        const organAnalysis = selectedResult.analysisResult.rawData.report.organ_analysis;
+                                                        const organs = ['liver', 'lung', 'pancreas', 'colon', 'kits'];
+                                                        return (
+                                                            <div className="space-y-3">
+                                                                {organs.map((key) => {
+                                                                    const organ = organAnalysis[key];
+                                                                    if (!organ) return null;
+                                                                    const lesions = Array.isArray(organ.lesions) ? organ.lesions : [];
+                                                                    const count = organ.total_lesions ?? lesions.length;
+                                                                    return (
+                                                                        <div key={key}>
+                                                                            <div className="font-semibold text-sm text-gray-900 mb-1">
+                                                                                {key.toUpperCase()}: {count} {count === 1 ? 'lesion' : 'lesions'}
+                                                                            </div>
+                                                                            {lesions.length === 0 ? (
+                                                                                <div className="text-sm text-gray-600">No lesions detected.</div>
+                                                                            ) : (
+                                                                                <div className="space-y-1">
+                                                                                    {lesions.map((lesion, idx) => {
+                                                                                        const dims = lesion?.dimensions || {};
+                                                                                        const axis = dims?.axis_aligned_mm || {};
+                                                                                        const W = axis.width_x_LR_mm != null ? Number(axis.width_x_LR_mm).toFixed(1) : '-';
+                                                                                        const H = axis.height_y_AP_mm != null ? Number(axis.height_y_AP_mm).toFixed(1) : '-';
+                                                                                        const D = axis.depth_z_SI_mm != null ? Number(axis.depth_z_SI_mm).toFixed(1) : '-';
+                                                                                        const MD = dims.max_3d_diameter_mm != null ? Number(dims.max_3d_diameter_mm).toFixed(1) : '-';
+                                                                                        const V = dims.volume_ml != null ? Number(dims.volume_ml).toFixed(1) : '-';
+                                                                                        const lesionIndex = lesion.lesion_id ?? (idx + 1);
+                                                                                        return (
+                                                                                            <div key={lesion.lesion_id ?? idx} className="text-sm text-gray-700">
+                                                                                                Lesion {lesionIndex} - Width - {W} mm, Height - {H} mm, Depth - {D} mm, Max Diameter - {MD} mm, Volume - {V} mL
+                                                                                            </div>
+                                                                                        );
+                                                                                    })}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </div>
+                                            )
                                         )}
                                     </div>
                                 ) : selectedResult.status === 'processing' ? (

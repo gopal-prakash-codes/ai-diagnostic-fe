@@ -388,6 +388,62 @@ const ReportView = () => {
                       )}
                     </div>
                   )}
+
+                  {selectedResult.data.analysisType === '3D' && selectedResult.data.rawData?.report?.organ_analysis && (
+                    <div className="detail-section">
+                      <h4>3D Lesion Details</h4>
+                      {(() => {
+                        const organAnalysis = selectedResult.data.rawData.report.organ_analysis;
+                        const organs = ['liver', 'lung', 'pancreas', 'colon', 'kits'];
+                        return (
+                          <div className="lesion-details">
+                            {organs.map((organKey) => {
+                              const organ = organAnalysis[organKey];
+                              if (!organ) return null;
+                              const lesions = Array.isArray(organ.lesions) ? organ.lesions : [];
+                              return (
+                                <div key={organKey} className="organ-block">
+                                  <h5 style={{ marginBottom: '8px' }}>{organKey.toUpperCase()} ({organ.total_lesions || lesions.length} lesions)</h5>
+                                  {lesions.length === 0 ? (
+                                    <p style={{ marginTop: 0 }}>No lesions detected.</p>
+                                  ) : (
+                                    <div style={{ marginTop: 0 }}>
+                                      <div style={{ fontWeight: 600, marginBottom: '6px' }}>
+                                        {organKey.toUpperCase()}: {organ.total_lesions || lesions.length} lesions
+                                      </div>
+                                      {lesions.map((lesion, idx) => {
+                                        const dims = lesion?.dimensions || {};
+                                        const axis = dims?.axis_aligned_mm || {};
+                                        const W = axis.width_x_LR_mm != null ? Number(axis.width_x_LR_mm).toFixed(1) : '-';
+                                        const H = axis.height_y_AP_mm != null ? Number(axis.height_y_AP_mm).toFixed(1) : '-';
+                                        const D = axis.depth_z_SI_mm != null ? Number(axis.depth_z_SI_mm).toFixed(1) : '-';
+                                        const MD = dims.max_3d_diameter_mm != null ? Number(dims.max_3d_diameter_mm).toFixed(1) : '-';
+                                        const V = dims.volume_ml != null ? Number(dims.volume_ml).toFixed(1) : '-';
+                                        const lesionIndex = lesion.lesion_id ?? (idx + 1);
+                                        return (
+                                          <div key={lesion.lesion_id ?? idx} style={{ margin: '2px 0' }}>
+                                            Lesion {lesionIndex} - Width - {W} mm, Height - {H} mm, Depth - {D} mm, Max Diameter - {MD} mm, Volume - {V} mL
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                  {organ.volume_statistics && (
+                                    <div style={{ marginTop: '8px', fontSize: '0.9rem' }}>
+                                      <strong>Organ Volume Stats:</strong>
+                                      <div>Total Vol: {Number(organ.volume_statistics.total_volume_ml || 0).toFixed(1)} mL</div>
+                                      <div>Largest Lesion: {Number(organ.volume_statistics.largest_lesion_volume_ml || 0).toFixed(1)} mL</div>
+                                      <div>Average Lesion: {Number(organ.volume_statistics.average_volume_ml || 0).toFixed(1)} mL</div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
               ) : selectedResult.analysisStatus === 'failed' ? (
                 <div className="error-details">
