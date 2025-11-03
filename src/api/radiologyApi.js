@@ -47,26 +47,65 @@ export const radiologyApi = {
     }
   },
 
-  // Upload scan files
-  uploadScanFiles: async (reportId, formData) => {
+  // Upload scan files (with progress callback support)
+  uploadScanFiles: async (reportId, formData, onProgress) => {
     try {
-      // Get auth headers but remove Content-Type for FormData
+      // Prefer XMLHttpRequest to get reliable upload progress events
       const headers = getAuthHeaders();
-      delete headers['Content-Type']; // Let browser set Content-Type for FormData
-      
-      const response = await fetch(`${API_BASE_URL}api/radiology/reports/${reportId}/upload`, {
-        method: 'POST',
-        headers: headers,
-        body: formData
+
+      // Wrap XHR in a Promise
+      const result = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${API_BASE_URL}api/radiology/reports/${reportId}/upload`, true);
+
+        // Set auth headers (do not set Content-Type; browser will set correct multipart boundary)
+        Object.entries(headers).forEach(([key, value]) => {
+          try {
+            if (key.toLowerCase() !== 'content-type') {
+              xhr.setRequestHeader(key, value);
+            }
+          } catch (_) {
+            // Safely ignore header setting issues
+          }
+        });
+
+        if (xhr.upload && typeof onProgress === 'function') {
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const percent = Math.round((event.loaded / event.total) * 100);
+              onProgress(percent, event.loaded, event.total);
+            } else {
+              onProgress(null, event.loaded, null);
+            }
+          };
+        }
+
+        xhr.onreadystatechange = () => {
+          if (xhr.readyState === XMLHttpRequest.DONE) {
+            try {
+              const json = JSON.parse(xhr.responseText || '{}');
+              if (xhr.status >= 200 && xhr.status < 300) {
+                resolve(json);
+              } else {
+                reject(new Error(json.message || 'Failed to upload files'));
+              }
+            } catch (e) {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                resolve({ success: true, data: [], raw: xhr.responseText });
+              } else {
+                reject(new Error('Failed to upload files'));
+              }
+            }
+          }
+        };
+
+        xhr.onerror = () => reject(new Error('Network error during upload'));
+        xhr.onabort = () => reject(new Error('Upload aborted'));
+
+        xhr.send(formData);
       });
 
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to upload files');
-      }
-
-      return data;
+      return result;
     } catch (error) {
       console.error('Upload files error:', error);
       throw error;

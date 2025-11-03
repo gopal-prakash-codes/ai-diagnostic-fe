@@ -239,6 +239,8 @@ function ScheduleVisit() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [clearTrigger, setClearTrigger] = useState(0);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isCompletingVisit, setIsCompletingVisit] = useState(false);
+  const [isOrderingLabTests, setIsOrderingLabTests] = useState(false);
 
   // Form state
   const [appointmentData, setAppointmentData] = useState({
@@ -349,32 +351,51 @@ function ScheduleVisit() {
     }
   };
 
-  const handleCompleteVisit = () => {
-    // TODO: Implement visit completion API call
-    console.log('Completing visit:', { appointmentData, diagnosis, conversation });
-    toast.success('Visit completed successfully!');
-    // Navigate to the specific session history if diagnosis exists
-    if (diagnosis && diagnosis._id) {
-      navigate(`/patient/${patientId}/history`, { 
-        state: { 
-          patient: patient,
-          sessionId: diagnosis._id,
-          scrollToSession: true 
-        } 
-      });
-    } else {
-      navigate(`/patient/${patientId}/history`, { state: { patient } });
+  const handleCompleteVisit = async () => {
+    setIsCompletingVisit(true);
+    try {
+      // TODO: Implement visit completion API call
+      console.log('Completing visit:', { appointmentData, diagnosis, conversation });
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      toast.success('Visit completed successfully!');
+      // Navigate to the specific session history if diagnosis exists
+      if (diagnosis && diagnosis._id) {
+        navigate(`/patient/${patientId}/history`, { 
+          state: { 
+            patient: patient,
+            sessionId: diagnosis._id,
+            scrollToSession: true 
+          } 
+        });
+      } else {
+        navigate(`/patient/${patientId}/history`, { state: { patient } });
+      }
+    } catch (error) {
+      console.error('Error completing visit:', error);
+      toast.error('Failed to complete visit. Please try again.');
+    } finally {
+      setIsCompletingVisit(false);
     }
   };
 
-  const handleOrderLabTests = () => {
-    // Navigate to radiology page
-    navigate('/radiology', { 
-      state: { 
-        patient: patient,
-        fromScheduleVisit: true
-      } 
-    });
+  const handleOrderLabTests = async () => {
+    setIsOrderingLabTests(true);
+    try {
+      // Simulate navigation delay
+      await new Promise(resolve => setTimeout(resolve, 300));
+      // Navigate to radiology page
+      navigate('/radiology', { 
+        state: { 
+          patient: patient,
+          fromScheduleVisit: true
+        } 
+      });
+    } catch (error) {
+      console.error('Error ordering lab tests:', error);
+      toast.error('Failed to navigate. Please try again.');
+      setIsOrderingLabTests(false);
+    }
   };
 
   const getInitials = (name) => {
@@ -436,8 +457,9 @@ function ScheduleVisit() {
                   className="bg-[#FAFAFA] text-[#172B4C] border border-gray-200 hover:bg-gray-100 px-4 py-2 rounded-lg"
                   onClick={handleSendForDiagnosis}
                   disabled={isAnalyzing}
+                  loading={isAnalyzing}
                 >
-                  {isAnalyzing ? 'Analyzing...' : 'Analyze'}
+                  Analyze
                 </Button>
               )}
             </div>
@@ -631,6 +653,7 @@ function ScheduleVisit() {
               variant="outline" 
               className="text-sm px-4 py-2 border border-[black] text-[black] hover:bg-gray-100"
               onClick={handleOrderLabTests}
+              loading={isOrderingLabTests}
             >
               <Flask className="w-4 h-4 mr-2" />
               Order Lab Tests
@@ -638,6 +661,7 @@ function ScheduleVisit() {
             <Button 
               className="bg-[#FAFAFA] text-[#172B4C] border border-gray-200 hover:bg-gray-100 text-sm px-4 py-2"
               onClick={handleCompleteVisit}
+              loading={isCompletingVisit}
             >
               <CheckCircle className="w-4 h-4 mr-2" />
               Complete Visit

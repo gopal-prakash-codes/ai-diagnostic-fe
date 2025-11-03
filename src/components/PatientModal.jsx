@@ -54,6 +54,7 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
   });
 
   const [newAllergy, setNewAllergy] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -79,10 +80,18 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave(formData);
-    onClose();
+    setIsSaving(true);
+    try {
+      await onSave(formData);
+      onClose();
+    } catch (error) {
+      console.error('Error saving patient:', error);
+      // Keep modal open if there's an error - error handling is done in parent component
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const getInitials = (name) => {
@@ -406,6 +415,7 @@ const PatientModal = ({ isOpen, onClose, patient, onSave, simpleMode = false }) 
             </Button>
             <Button
               type="submit"
+              loading={isSaving}
               className="px-6 py-3 bg-[#FAFAFA] text-[#172B4C] border border-gray-200 hover:bg-gray-100 rounded-lg transition-colors duration-200"
             >
               {patient ? 'Update Patient' : 'Create Patient'}

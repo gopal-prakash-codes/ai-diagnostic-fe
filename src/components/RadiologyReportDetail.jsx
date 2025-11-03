@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import SidebarLayout from "./SideBar";
@@ -20,6 +20,9 @@ const RadiologyReportDetail = () => {
     const [isAnalyzing2D, setIsAnalyzing2D] = useState(false);
     const [isAnalyzing3D, setIsAnalyzing3D] = useState(false);
     const [deletingItems, setDeletingItems] = useState(new Set());
+    const [navigatingReports, setNavigatingReports] = useState(new Set());
+    const [viewingImageIds, setViewingImageIds] = useState(new Set());
+    const [viewingResultIds, setViewingResultIds] = useState(new Set());
     const [deleteModal, setDeleteModal] = useState({ isOpen: false, type: null, id: null, name: null });
     const [analysisResults, setAnalysisResults] = useState([]);
     const [jobStatuses, setJobStatuses] = useState({});
@@ -46,6 +49,54 @@ const RadiologyReportDetail = () => {
     
     // Analysis is now handled through Node.js backend - no direct API calls needed
     
+    // Disable 3D upload/analysis if any analysis is active (pending/processing)
+    const hasAnyActiveAnalysis = useMemo(() => {
+        const backendRecordsActive = (scanRecords || []).some(record => {
+            const status = record?.analysisStatus;
+            return status === 'pending' || status === 'processing';
+        });
+        const localResultsActive = (analysisResults || []).some(r => r?.status === 'processing' || r?.status === 'pending');
+        return backendRecordsActive || localResultsActive || isAnalyzing2D || isAnalyzing3D;
+    }, [scanRecords, analysisResults, isAnalyzing2D, isAnalyzing3D]);
+    
+    const withNavigatingReport = async (id, fn) => {
+        setNavigatingReports(prev => new Set(prev).add(id));
+        try {
+            await fn();
+        } finally {
+            setNavigatingReports(prev => {
+                const next = new Set(prev);
+                next.delete(id);
+                return next;
+            });
+        }
+    };
+
+    const withViewingImage = async (id, fn) => {
+        setViewingImageIds(prev => new Set(prev).add(id));
+        try {
+            await fn();
+        } finally {
+            setViewingImageIds(prev => {
+                const next = new Set(prev);
+                next.delete(id);
+                return next;
+            });
+        }
+    };
+
+    const withViewingResult = async (id, fn) => {
+        setViewingResultIds(prev => new Set(prev).add(id));
+        try {
+            await fn();
+        } finally {
+            setViewingResultIds(prev => {
+                const next = new Set(prev);
+                next.delete(id);
+                return next;
+            });
+        }
+    };
 
     const loadReportData = useCallback(async (forceReload = false) => {
         if (loadingRef.current || (!forceReload && currentReportIdRef.current === reportId)) {
@@ -85,8 +136,6 @@ const RadiologyReportDetail = () => {
                     }
                 } catch (reportError) {
                     
-                    // If report doesn't exist, check if this is a patient ID
-                    // and try to load the most recent report for this patient
                     try {
                         const patientReportsResponse = await radiologyApi.getPatientReports(reportId, { page: 1, limit: 1 });
                         if (patientReportsResponse.success && patientReportsResponse.data.reports.length > 0) {
@@ -325,6 +374,10 @@ const RadiologyReportDetail = () => {
 
     // Handle file uploads - single file only, replaces existing
     const handleImageUpload = (event) => {
+        if (hasAnyActiveAnalysis) {
+            toast.info('An analysis is in progress. Please wait before uploading another image.');
+            return;
+        }
         const file = event.target.files[0];
         if (file) {
             setUploadedImage(file);
@@ -333,6 +386,10 @@ const RadiologyReportDetail = () => {
     };
 
     const handleZipUpload = (event) => {
+        if (hasAnyActiveAnalysis) {
+            toast.info('An analysis is in progress. Please wait before uploading another ZIP.');
+            return;
+        }
         const file = event.target.files[0];
         if (file) {
             setUploadedZipFile(file);
@@ -384,7 +441,22 @@ const RadiologyReportDetail = () => {
             const formData = new FormData();
             formData.append('image', uploadedImage);
             formData.append('scanType', selectedScanType);
-            const uploadResponse = await radiologyApi.uploadScanFiles(currentReport.reportId, formData);
+            // Show upload progress similar to OHIF download
+            const toastId = toast.loading('Uploading image... 0%', { autoClose: false, closeButton: false });
+            const uploadResponse = await radiologyApi.uploadScanFiles(
+                currentReport.reportId,
+                formData,
+                (percent, loaded, total) => {
+                    // Throttle handled by XHR eventing frequency; keep UI light
+                    const label = percent != null ? `${percent}%` : `${Math.round((loaded / (1024*1024)) || 0)} MB`;
+                    toast.update(toastId, {
+                        render: `📤 Uploading image: ${label}${total ? ` (${(loaded/(1024*1024)).toFixed(1)}/${(total/(1024*1024)).toFixed(1)} MB)` : ''}`,
+                        type: 'info',
+                        isLoading: true
+                    });
+                }
+            );
+            toast.update(toastId, { render: 'Image uploaded', type: 'success', isLoading: false, autoClose: 2500, closeButton: true });
             
             if (uploadResponse.success && uploadResponse.data.length > 0) {
                 const uploadResult = uploadResponse.data.find(result => result.type === '2D');
@@ -489,6 +561,10 @@ const RadiologyReportDetail = () => {
     
 
     const handleAnalyze3D = async () => {
+        if (hasAnyActiveAnalysis) {
+            toast.info('An analysis is already in progress. Please wait until it completes.');
+            return;
+        }
         if (!uploadedZipFile) {
             toast.error('Please upload a ZIP file to analyze.');
             return;
@@ -509,7 +585,21 @@ const RadiologyReportDetail = () => {
             const formData = new FormData();
             formData.append('zipFile', uploadedZipFile);
             formData.append('scanType', selectedScanType);
-            const uploadResponse = await radiologyApi.uploadScanFiles(currentReport.reportId, formData);
+            // Show upload progress similar to OHIF download
+            const toastId = toast.loading('Uploading ZIP... 0%', { autoClose: false, closeButton: false });
+            const uploadResponse = await radiologyApi.uploadScanFiles(
+                currentReport.reportId,
+                formData,
+                (percent, loaded, total) => {
+                    const label = percent != null ? `${percent}%` : `${Math.round((loaded / (1024*1024)) || 0)} MB`;
+                    toast.update(toastId, {
+                        render: `📤 Uploading ZIP: ${label}${total ? ` (${(loaded/(1024*1024)).toFixed(1)}/${(total/(1024*1024)).toFixed(1)} MB)` : ''}`,
+                        type: 'info',
+                        isLoading: true
+                    });
+                }
+            );
+            toast.update(toastId, { render: 'ZIP uploaded', type: 'success', isLoading: false, autoClose: 2500, closeButton: true });
             
             if (uploadResponse.success && uploadResponse.data.length > 0) {
                 const uploadResult = uploadResponse.data.find(result => result.type === '3D');
@@ -929,16 +1019,18 @@ const RadiologyReportDetail = () => {
                                                     </td>
                                                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                                                         <button
-                                                            onClick={() => navigate(`/radiology-report/${report.reportId}`)}
-                                                            className="text-[#2EB4B4] hover:text-[#2EB4B4]/80 mr-3"
+                                                            onClick={() => withNavigatingReport(report.reportId, async () => { navigate(`/radiology-report/${report.reportId}`); })}
+                                                            disabled={navigatingReports.has(report.reportId)}
+                                                            className={`mr-3 ${navigatingReports.has(report.reportId) ? 'text-gray-400 cursor-not-allowed' : 'text-[#2EB4B4] hover:text-[#2EB4B4]/80'}`}
                                                         >
-                                                            View
+                                                            {navigatingReports.has(report.reportId) ? 'Opening…' : 'View'}
                                                         </button>
                                                         <button
-                                                            onClick={() => navigate(`/report-view/${report.reportId}`)}
-                                                            className="text-blue-600 hover:text-blue-800 mr-3"
+                                                            onClick={() => withNavigatingReport(report.reportId + '-details', async () => { navigate(`/report-view/${report.reportId}`); })}
+                                                            disabled={navigatingReports.has(report.reportId + '-details')}
+                                                            className={`mr-3 ${navigatingReports.has(report.reportId + '-details') ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:text-blue-800'}`}
                                                         >
-                                                            Details
+                                                            {navigatingReports.has(report.reportId + '-details') ? 'Opening…' : 'Details'}
                                                         </button>
                                                         <button
                                                             onClick={() => handleDeleteReport(report.reportId)}
@@ -962,15 +1054,16 @@ const RadiologyReportDetail = () => {
                             <div className="flex-1">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Upload 2D Images (Reports)</label>
                                 <div 
-                                    className="bg-white rounded-lg shadow-sm p-6 border-dashed border-2 border-gray-300 text-center cursor-pointer hover:border-gray-400 transition-colors"
-                                    onClick={() => document.getElementById('imageUpload').click()}
+                                    className={`bg-white rounded-lg shadow-sm p-6 border-dashed border-2 text-center transition-colors ${hasAnyActiveAnalysis ? 'border-gray-200 cursor-not-allowed opacity-60' : 'border-gray-300 cursor-pointer hover:border-gray-400'}`}
+                                    onClick={() => { if (!hasAnyActiveAnalysis) document.getElementById('imageUpload').click(); }}
                                 >
                                     <input 
                                         type="file" 
                                         accept=".jpg,.jpeg,.png,image/jpeg,image/png" 
                                         className="hidden" 
                                         id="imageUpload" 
-                                        onChange={handleImageUpload}
+                                        onChange={(e) => { if (!hasAnyActiveAnalysis) handleImageUpload(e); }}
+                                        disabled={hasAnyActiveAnalysis}
                                     />
                                     <IoCloudUploadOutline className="mx-auto text-4xl text-gray-400 mb-2" />
                                     {uploadedImage ? (
@@ -1000,15 +1093,16 @@ const RadiologyReportDetail = () => {
                             <div className="flex-1">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Upload 3D DICOM Files (ZIP)</label>
                                 <div 
-                                    className="bg-white rounded-lg shadow-sm p-6 border-dashed border-2 border-gray-300 text-center cursor-pointer hover:border-gray-400 transition-colors"
-                                    onClick={() => document.getElementById('zipUpload').click()}
+                                    className={`bg-white rounded-lg shadow-sm p-6 border-dashed border-2 text-center transition-colors ${hasAnyActiveAnalysis ? 'border-gray-200 cursor-not-allowed opacity-60' : 'border-gray-300 cursor-pointer hover:border-gray-400'}`}
+                                    onClick={() => { if (!hasAnyActiveAnalysis) document.getElementById('zipUpload').click(); }}
                                 >
                                     <input 
                                         type="file" 
                                         accept=".zip,application/zip" 
                                         className="hidden" 
                                         id="zipUpload" 
-                                        onChange={handleZipUpload}
+                                        onChange={(e) => { if (!hasAnyActiveAnalysis) handleZipUpload(e); }}
+                                        disabled={hasAnyActiveAnalysis}
                                     />
                                     <IoCloudUploadOutline className="mx-auto text-4xl text-gray-400 mb-2" />
                                     {uploadedZipFile ? (
@@ -1041,25 +1135,37 @@ const RadiologyReportDetail = () => {
     <div className="flex flex-col sm:flex-row justify-between gap-4">
         <button 
             onClick={handleAnalyze2D}
-            disabled={isAnalyzing2D || !uploadedImage || !selectedScanType}
+            disabled={isAnalyzing2D || !uploadedImage || !selectedScanType || hasAnyActiveAnalysis}
             className={`px-3 py-1.5 rounded-md flex items-center gap-2 transition-colors ${
-                isAnalyzing2D || !uploadedImage || !selectedScanType
+                isAnalyzing2D || !uploadedImage || !selectedScanType || hasAnyActiveAnalysis
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-200'
                     : 'bg-[#FAFAFA] text-[#172B4C] border border-gray-200 hover:bg-gray-100'
             }`}
         >
+            {isAnalyzing2D && (
+                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            )}
             {isAnalyzing2D ? 'Analyzing 2D...' : 'Analyze 2D'}
         </button>
         
         <button 
             onClick={handleAnalyze3D}
-            disabled={isAnalyzing3D || !uploadedZipFile || !selectedScanType}
+            disabled={isAnalyzing3D || !uploadedZipFile || !selectedScanType || hasAnyActiveAnalysis}
             className={`px-3 py-1.5 rounded-md flex items-center gap-2 transition-colors ${
-                isAnalyzing3D || !uploadedZipFile || !selectedScanType
+                isAnalyzing3D || !uploadedZipFile || !selectedScanType || hasAnyActiveAnalysis
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-200'
                     : 'bg-[#FAFAFA] text-[#172B4C] border border-gray-200 hover:bg-gray-100'
             }`}
         >
+            {isAnalyzing3D && (
+                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            )}
             {isAnalyzing3D ? 'Analyzing 3D...' : 'Analyze DICOM'}
         </button>
     </div>
@@ -1122,14 +1228,26 @@ const RadiologyReportDetail = () => {
                                                     {scan.scanType === 'DICOM' ? (
                                                         scan.originalDicom === 'available' ? (
                                                             <button 
-                                                                onClick={() => handleViewImage(
-                                                                    scan.scanRecord?._id || scan.id, 
-                                                                    scan.fileName,
-                                                                    'original'
-                                                                )}
-                                                                className="inline-flex items-center px-3 py-1 rounded-md text-sm border border-[black] text-[black] hover:bg-gray-100 transition-colors"
+                                                                onClick={() => withViewingImage(scan.scanRecord?._id || scan.id, async () => {
+                                                                    await handleViewImage(
+                                                                        scan.scanRecord?._id || scan.id, 
+                                                                        scan.fileName,
+                                                                        'original'
+                                                                    );
+                                                                })}
+                                                                disabled={viewingImageIds.has(scan.scanRecord?._id || scan.id)}
+                                                                className={`inline-flex items-center px-3 py-1 rounded-md text-sm border transition-colors ${viewingImageIds.has(scan.scanRecord?._id || scan.id) ? 'border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed' : 'border-[black] text-[black] hover:bg-gray-100'}`}
                                                             >
-                                                                <IoEyeOutline className="mr-1" /> View
+                                                                {viewingImageIds.has(scan.scanRecord?._id || scan.id) ? (
+                                                                    <>
+                                                                        <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                                                        Opening…
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <IoEyeOutline className="mr-1" /> View
+                                                                    </>
+                                                                )}
                                                             </button>
                                                         ) : scan.isSample ? (
                                                             <span className="text-gray-400 text-sm">Upload files to analyze</span>
@@ -1139,16 +1257,28 @@ const RadiologyReportDetail = () => {
                                                     ) : scan.scanType === 'Report' ? (
                                                         scan.originalDicom === 'available' ? (
                                                             <button 
-                                                                onClick={() => handleViewImage(
-                                                                    scan.scanRecord?._id || scan.id, 
-                                                                    scan.fileName,
-                                                                    'original',
-                                                                    'professional'
-                                                                )}
-                                                                className="inline-flex items-center px-3 py-1 rounded-md text-sm border border-[black] text-[black] hover:bg-gray-100 transition-colors"
+                                                                onClick={() => withViewingImage(scan.scanRecord?._id || scan.id, async () => {
+                                                                    await handleViewImage(
+                                                                        scan.scanRecord?._id || scan.id, 
+                                                                        scan.fileName,
+                                                                        'original',
+                                                                        'professional'
+                                                                    );
+                                                                })}
+                                                                disabled={viewingImageIds.has(scan.scanRecord?._id || scan.id)}
+                                                                className={`inline-flex items-center px-3 py-1 rounded-md text-sm border transition-colors ${viewingImageIds.has(scan.scanRecord?._id || scan.id) ? 'border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed' : 'border-[black] text-[black] hover:bg-gray-100'}`}
                                                                 title="Professional Medical Viewer"
                                                             >
-                                                                <IoEyeOutline className="mr-1" /> View Medical Images
+                                                                {viewingImageIds.has(scan.scanRecord?._id || scan.id) ? (
+                                                                    <>
+                                                                        <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                                                        Opening…
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <IoEyeOutline className="mr-1" /> View Medical Images
+                                                                    </>
+                                                                )}
                                                             </button>
                                                         ) : scan.isSample ? (
                                                             <span className="text-gray-400 text-sm">Upload files to analyze</span>
@@ -1165,16 +1295,28 @@ const RadiologyReportDetail = () => {
                                                         (scan.scanType === 'DICOM' || scan.scanType === 'Report') ? (
                                                             scan.analysedDicom === 'available' ? (
                                                                 <button 
-                                                                    onClick={() => handleViewImage(
-                                                                        scan.scanRecord?._id || scan.id, 
-                                                                        scan.fileName,
-                                                                        'analyzed',
-                                                                        'professional'
-                                                                    )}
-                                                                    className="inline-flex items-center px-3 py-1 rounded-md text-sm border border-[black] text-[black] hover:bg-gray-100 transition-colors"
+                                                                    onClick={() => withViewingImage(scan.scanRecord?._id || scan.id + '-processed', async () => {
+                                                                        await handleViewImage(
+                                                                            scan.scanRecord?._id || scan.id, 
+                                                                            scan.fileName,
+                                                                            'analyzed',
+                                                                            'professional'
+                                                                        );
+                                                                    })}
+                                                                    disabled={viewingImageIds.has((scan.scanRecord?._id || scan.id) + '-processed')}
+                                                                    className={`inline-flex items-center px-3 py-1 rounded-md text-sm border transition-colors ${viewingImageIds.has((scan.scanRecord?._id || scan.id) + '-processed') ? 'border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed' : 'border-[black] text-[black] hover:bg-gray-100'}`}
                                                                     title="View Processed Medical Images"
                                                                 >
-                                                                    <IoEyeOutline className="mr-1" /> View Processed Images
+                                                                    {viewingImageIds.has((scan.scanRecord?._id || scan.id) + '-processed') ? (
+                                                                        <>
+                                                                            <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                                                            Opening…
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <IoEyeOutline className="mr-1" /> View Processed Images
+                                                                        </>
+                                                                    )}
                                                                 </button>
                                                             ) : scan.analysedDicom === 'processing' ? (
                                                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
@@ -1199,10 +1341,20 @@ const RadiologyReportDetail = () => {
                                                         scan.report === 'available' ? (
                                                             <div className="flex gap-2">
                                                                 <button 
-                                                                    onClick={() => handleViewResult(scan.result)}
-                                                                    className="inline-flex items-center px-3 py-1 rounded-md text-sm border border-[black] text-[black] hover:bg-gray-100 transition-colors"
+                                                                    onClick={() => withViewingResult(scan.scanRecord?._id || scan.id, async () => { await handleViewResult(scan.result); })}
+                                                                    disabled={viewingResultIds.has(scan.scanRecord?._id || scan.id)}
+                                                                    className={`inline-flex items-center px-3 py-1 rounded-md text-sm border transition-colors ${viewingResultIds.has(scan.scanRecord?._id || scan.id) ? 'border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed' : 'border-[black] text-[black] hover:bg-gray-100'}`}
                                                                 >
-                                                                    <IoDocumentTextOutline className="mr-1" /> View Report
+                                                                    {viewingResultIds.has(scan.scanRecord?._id || scan.id) ? (
+                                                                        <>
+                                                                            <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                                                            Opening…
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <IoDocumentTextOutline className="mr-1" /> View Report
+                                                                        </>
+                                                                    )}
                                                                 </button>
                                                             </div>
                                                         ) : scan.report === 'pending' ? (
@@ -1220,10 +1372,20 @@ const RadiologyReportDetail = () => {
                                                         scan.report === 'available' ? (
                                                             <div className="flex gap-2">
                                                                 <button 
-                                                                    onClick={() => handleViewResult(scan.result)}
-                                                                    className="inline-flex items-center px-3 py-1 rounded-md text-sm border border-[black] text-[black] hover:bg-gray-100 transition-colors"
+                                                                    onClick={() => withViewingResult(scan.scanRecord?._id || scan.id, async () => { await handleViewResult(scan.result); })}
+                                                                    disabled={viewingResultIds.has(scan.scanRecord?._id || scan.id)}
+                                                                    className={`inline-flex items-center px-3 py-1 rounded-md text-sm border transition-colors ${viewingResultIds.has(scan.scanRecord?._id || scan.id) ? 'border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed' : 'border-[black] text-[black] hover:bg-gray-100'}`}
                                                                 >
-                                                                    <IoDocumentTextOutline className="mr-1" /> View Report
+                                                                    {viewingResultIds.has(scan.scanRecord?._id || scan.id) ? (
+                                                                        <>
+                                                                            <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                                                            Opening…
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <IoDocumentTextOutline className="mr-1" /> View Report
+                                                                        </>
+                                                                    )}
                                                                 </button>
                                                             </div>
                                                         ) : scan.report === 'pending' ? (
