@@ -110,11 +110,8 @@ const PatientRecords = () => {
     }
   };
 
-  // Generate avatar URL based on gender and name
   const getAvatarUrl = (patient, index) => {
-    const genderPath = patient.gender === 'female' ? 'women' : 'men';
-    const seedNumber = (index % 99) + 1; // Use index to ensure consistent avatars
-    return `https://randomuser.me/api/portraits/${genderPath}/${seedNumber}.jpg`;
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(patient.name || 'Unknown')}&background=FAFAFA&color=172B4C`;
   };
 
   // Get patient condition (placeholder - you might want to derive this from consultation history)
@@ -180,14 +177,10 @@ const PatientRecords = () => {
                     >
                       {/* Left: Avatar + Info */}
                    <div className="flex items-start sm:items-center gap-3 flex-1">
-                        <img
+                       <img
                           src={avatarUrl}
                           alt={`${patient.name} avatar`}
                           className="w-10 h-10 rounded-full"
-                          onError={(e) => {
-                            // Fallback if image fails to load
-                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(patient.name)}&background=FAFAFA&color=172B4C`;
-                          }}
                         />
                         <div>
                           <div className="font-semibold text-gray-800 text-sm">

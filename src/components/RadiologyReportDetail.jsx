@@ -1021,21 +1021,21 @@ const RadiologyReportDetail = () => {
                                                         <button
                                                             onClick={() => withNavigatingReport(report.reportId, async () => { navigate(`/radiology-report/${report.reportId}`); })}
                                                             disabled={navigatingReports.has(report.reportId)}
-                                                            className={`mr-3 ${navigatingReports.has(report.reportId) ? 'text-gray-400 cursor-not-allowed' : 'text-[#2EB4B4] hover:text-[#2EB4B4]/80'}`}
+                                                            className={`mr-3 ${navigatingReports.has(report.reportId) ? 'text-gray-400 cursor-not-allowed' : 'text-[#2EB4B4] hover:text-[#2EB4B4]/80 cursor-pointer'}`}
                                                         >
                                                             {navigatingReports.has(report.reportId) ? 'Opening…' : 'View'}
                                                         </button>
                                                         <button
                                                             onClick={() => withNavigatingReport(report.reportId + '-details', async () => { navigate(`/report-view/${report.reportId}`); })}
                                                             disabled={navigatingReports.has(report.reportId + '-details')}
-                                                            className={`mr-3 ${navigatingReports.has(report.reportId + '-details') ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:text-blue-800'}`}
+                                                            className={`mr-3 ${navigatingReports.has(report.reportId + '-details') ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:text-blue-800 cursor-pointer'}`}
                                                         >
                                                             {navigatingReports.has(report.reportId + '-details') ? 'Opening…' : 'Details'}
                                                         </button>
                                                         <button
                                                             onClick={() => handleDeleteReport(report.reportId)}
                                                             disabled={deletingItems.has(report.reportId)}
-                                                            className={`${deletingItems.has(report.reportId) ? 'text-gray-400 cursor-not-allowed' : 'text-red-600 hover:text-red-800'}`}
+                                                            className={`${deletingItems.has(report.reportId) ? 'text-gray-400 cursor-not-allowed' : 'text-red-600 hover:text-red-800 cursor-pointer'}`}
                                                         >
                                                             {deletingItems.has(report.reportId) ? 'Deleting...' : 'Delete'}
                                                         </button>
@@ -1236,7 +1236,7 @@ const RadiologyReportDetail = () => {
                                                                     );
                                                                 })}
                                                                 disabled={viewingImageIds.has(scan.scanRecord?._id || scan.id)}
-                                                                className={`inline-flex items-center px-3 py-1 rounded-md text-sm border transition-colors ${viewingImageIds.has(scan.scanRecord?._id || scan.id) ? 'border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed' : 'border-[black] text-[black] hover:bg-gray-100'}`}
+                                                                className={`inline-flex items-center px-3 py-1 rounded-md text-sm border transition-colors ${viewingImageIds.has(scan.scanRecord?._id || scan.id) ? 'border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed' : 'border-[black] text-[black] hover:bg-gray-100 cursor-pointer'}`}
                                                             >
                                                                 {viewingImageIds.has(scan.scanRecord?._id || scan.id) ? (
                                                                     <>
@@ -1266,7 +1266,7 @@ const RadiologyReportDetail = () => {
                                                                     );
                                                                 })}
                                                                 disabled={viewingImageIds.has(scan.scanRecord?._id || scan.id)}
-                                                                className={`inline-flex items-center px-3 py-1 rounded-md text-sm border transition-colors ${viewingImageIds.has(scan.scanRecord?._id || scan.id) ? 'border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed' : 'border-[black] text-[black] hover:bg-gray-100'}`}
+                                                                className={`inline-flex items-center px-3 py-1 rounded-md text-sm border transition-colors ${viewingImageIds.has(scan.scanRecord?._id || scan.id) ? 'border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed' : 'border-[black] text-[black] hover:bg-gray-100 cursor-pointer'}`}
                                                                 title="Professional Medical Viewer"
                                                             >
                                                                 {viewingImageIds.has(scan.scanRecord?._id || scan.id) ? (
@@ -1295,7 +1295,7 @@ const RadiologyReportDetail = () => {
                                                         (scan.scanType === 'DICOM' || scan.scanType === 'Report') ? (
                                                             scan.analysedDicom === 'available' ? (
                                                                 <button 
-                                                                    onClick={() => withViewingImage(scan.scanRecord?._id || scan.id + '-processed', async () => {
+                                                                    onClick={() => withViewingImage((scan.scanRecord?._id || scan.id) + '-processed', async () => {
                                                                         await handleViewImage(
                                                                             scan.scanRecord?._id || scan.id, 
                                                                             scan.fileName,
@@ -1304,7 +1304,7 @@ const RadiologyReportDetail = () => {
                                                                         );
                                                                     })}
                                                                     disabled={viewingImageIds.has((scan.scanRecord?._id || scan.id) + '-processed')}
-                                                                    className={`inline-flex items-center px-3 py-1 rounded-md text-sm border transition-colors ${viewingImageIds.has((scan.scanRecord?._id || scan.id) + '-processed') ? 'border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed' : 'border-[black] text-[black] hover:bg-gray-100'}`}
+                                                                    className={`inline-flex items-center px-3 py-1 rounded-md text-sm border transition-colors ${viewingImageIds.has((scan.scanRecord?._id || scan.id) + '-processed') ? 'border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed' : 'border-[black] text-[black] hover:bg-gray-100 cursor-pointer'}`}
                                                                     title="View Processed Medical Images"
                                                                 >
                                                                     {viewingImageIds.has((scan.scanRecord?._id || scan.id) + '-processed') ? (
