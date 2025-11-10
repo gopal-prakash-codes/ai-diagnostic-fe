@@ -662,10 +662,10 @@ function ScheduleVisit() {
             </Card>
           </div>
 
-          {/* Bottom Row - Transcription and Diagnosis */}
+          {/* Bottom Row - Transcription and Live Guidance */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
             {/* Transcription */}
-          <Card className="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col w-full">
+            <Card className="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col w-full">
               <CardHeader className="bg-red-700 px-4 py-3 rounded-t-xl">
                 <div className="flex items-center space-x-2">
                   <Mic className="w-5 h-5 text-white" />
@@ -681,129 +681,130 @@ function ScheduleVisit() {
               </CardContent>
             </Card>
 
-            {/* Diagnosis & Next Steps */}
+            {/* Live Guidance */}
             <Card className="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col w-full">
               <CardHeader className="bg-red-700 px-4 py-3 rounded-t-xl">
                 <div className="flex items-center space-x-2">
-                  <ActivityIcon className="w-5 h-5 text-white" />
-                  <span className="text-white font-semibold text-base">Diagnosis & Next Steps</span>
+                  <LightBulb className="w-5 h-5 text-white" />
+                  <span className="text-white font-semibold text-base">Live Guidance</span>
                 </div>
               </CardHeader>
-              <CardContent className="p-4 space-y-4 flex-1 min-h-[300px]">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Symptoms:
-                  </label>
-                   <div className="min-h-[60px] border border-gray-200 rounded-md p-3">
-                    {diagnosis?.symptoms && diagnosis.symptoms.length > 0 ? (
-                      <div className="space-y-1">
-                        {diagnosis.symptoms.map((symptom, idx) => (
-                          <div key={idx} className="flex items-center">
-                            <div className="w-4 h-4 bg-gray-400 rounded-full flex items-center justify-center mr-3">
-                              <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                            <span className="text-sm text-gray-700">{symptom}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="text-sm text-gray-500">No symptoms identified</span>
-                    )}
-                  </div>
+              <CardContent className="p-4 space-y-4 flex-1 min-h-[300px] max-h-[420px] overflow-hidden">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Next Best Steps</span>
+                  {isFetchingSuggestions && (
+                    <span className="text-xs text-blue-600">Updating...</span>
+                  )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Diagnosis:
-                  </label>
-                   <div className="min-h-[60px] border border-gray-200 rounded-md p-3">
-                    {diagnosis?.diagnosisData && diagnosis.diagnosisData.length > 0 ? (
-                      <div className="space-y-2 w-full">
-                        {diagnosis.diagnosisData.map((diagItem, idx) => (
-                          <div key={idx} className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              <div className="w-4 h-4 bg-gray-400 rounded-full flex items-center justify-center mr-3">
-                                <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              </div>
-                              <span className="text-sm text-gray-700 font-medium">{diagItem.condition}</span>
-                            </div>
-                            <span className="text-xs text-gray-500">{diagItem.confidence}%</span>
-                          </div>
-                        ))}
+                {suggestions.length > 0 ? (
+                  <div className="space-y-3 overflow-y-auto pr-1">
+                    {suggestions.map((item, idx) => (
+                      <div key={idx} className="border border-gray-200 rounded-lg p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <span className="text-sm text-gray-900 font-medium">{item.question}</span>
+                          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${getPriorityBadgeClass(item.priority)}`}>
+                            {item && item.priority ? item.priority.toUpperCase() : 'ROUTINE'}
+                          </span>
+                        </div>
                       </div>
-                    ) : diagnosis?.diagnosis ? (
-                      <div className="flex items-center justify-between">
+                    ))}
+                  </div>
+                ) : (
+                  <div className="border border-dashed border-gray-300 rounded-lg p-4 text-sm text-gray-500 flex-1">
+                    {isFetchingSuggestions ? 'Generating real-time guidance...' : 'Start or continue the consultation to receive AI-assisted next questions.'}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+        </div>
+
+        {/* Diagnosis & Next Steps */}
+        <Card className="bg-white border border-gray-200 rounded-xl shadow-sm">
+          <CardHeader className="bg-red-700 px-4 py-3 rounded-t-xl">
+            <div className="flex items-center space-x-2">
+              <ActivityIcon className="w-5 h-5 text-white" />
+              <span className="text-white font-semibold text-base">Diagnosis & Next Steps</span>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 space-y-4 flex-1 min-h-[300px]">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Symptoms:
+              </label>
+              <div className="min-h-[60px] border border-gray-200 rounded-md p-3">
+                {diagnosis?.symptoms && diagnosis.symptoms.length > 0 ? (
+                  <div className="space-y-1">
+                    {diagnosis.symptoms.map((symptom, idx) => (
+                      <div key={idx} className="flex items-center">
+                        <div className="w-4 h-4 bg-gray-400 rounded-full flex items-center justify-center mr-3">
+                          <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <span className="text-sm text-gray-700">{symptom}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-sm text-gray-500">No symptoms identified</span>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Diagnosis:
+              </label>
+              <div className="min-h-[60px] border border-gray-200 rounded-md p-3">
+                {diagnosis?.diagnosisData && diagnosis.diagnosisData.length > 0 ? (
+                  <div className="space-y-2 w-full">
+                    {diagnosis.diagnosisData.map((diagItem, idx) => (
+                      <div key={idx} className="flex items-center justify-between">
                         <div className="flex items-center">
                           <div className="w-4 h-4 bg-gray-400 rounded-full flex items-center justify-center mr-3">
                             <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
                           </div>
-                          <span className="text-sm text-gray-700 font-medium">{diagnosis.diagnosis}</span>
+                          <span className="text-sm text-gray-700 font-medium">{diagItem.condition}</span>
                         </div>
-                        {diagnosis.confidence && (
-                          <span className="text-xs text-gray-500">{diagnosis.confidence}%</span>
-                        )}
+                        <span className="text-xs text-gray-500">{diagItem.confidence}%</span>
                       </div>
-                    ) : (
-                      <span className="text-sm text-gray-500">No diagnosis available</span>
-                    )}
+                    ))}
                   </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Next Steps (Treatment)
-                  </label>
-                   <div className="min-h-[80px] border border-gray-200 rounded-md p-3">
-                    {diagnosis?.treatment ? (
-                      <span className="text-sm text-gray-700">{diagnosis.treatment}</span>
-                    ) : (
-                      <span className="text-sm text-gray-500">No treatment plan available</span>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-        </div>
-
-        <Card className="bg-white border border-gray-200 rounded-xl shadow-sm">
-          <CardHeader className="bg-red-700 px-4 py-3 rounded-t-xl">
-            <div className="flex items-center space-x-2">
-              <LightBulb className="w-5 h-5 text-white" />
-              <span className="text-white font-semibold text-base">Live Guidance</span>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 space-y-4 flex flex-col min-h-[300px] max-h-[420px] overflow-hidden">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Next Best Steps</span>
-              {isFetchingSuggestions && (
-                <span className="text-xs text-blue-600">Updating...</span>
-              )}
-            </div>
-
-            {suggestions.length > 0 ? (
-              <div className="space-y-3 overflow-y-auto pr-1">
-                {suggestions.map((item, idx) => (
-                  <div key={idx} className="border border-gray-200 rounded-lg p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="text-sm text-gray-900 font-medium">{item.question}</span>
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${getPriorityBadgeClass(item.priority)}`}>
-                        {item && item.priority ? item.priority.toUpperCase() : 'ROUTINE'}
-                      </span>
+                ) : diagnosis?.diagnosis ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="w-4 h-4 bg-gray-400 rounded-full flex items-center justify-center mr-3">
+                        <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <span className="text-sm text-gray-700 font-medium">{diagnosis.diagnosis}</span>
                     </div>
+                    {diagnosis.confidence && (
+                      <span className="text-xs text-gray-500">{diagnosis.confidence}%</span>
+                    )}
                   </div>
-                ))}
+                ) : (
+                  <span className="text-sm text-gray-500">No diagnosis available</span>
+                )}
               </div>
-            ) : (
-              <div className="border border-dashed border-gray-300 rounded-lg p-4 text-sm text-gray-500 flex-1">
-                {isFetchingSuggestions ? 'Generating real-time guidance...' : 'Start or continue the consultation to receive AI-assisted next questions.'}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Next Steps (Treatment)
+              </label>
+              <div className="min-h-[80px] border border-gray-200 rounded-md p-3">
+                {diagnosis?.treatment ? (
+                  <span className="text-sm text-gray-700">{diagnosis.treatment}</span>
+                ) : (
+                  <span className="text-sm text-gray-500">No treatment plan available</span>
+                )}
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
 
