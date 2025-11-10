@@ -236,6 +236,35 @@ export const transcribeWithSpeakers = async (formData) => {
   return data;
 }
 
+export const fetchLiveSuggestions = async (payload, signal) => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Authentication required. Please login again.');
+  }
+
+  const options = {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload)
+  };
+
+  if (signal) {
+    options.signal = signal;
+  }
+
+  const response = await fetch(`${API_BASE_URL}api/diagnosis/suggestions`, options);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || errorData.message || `Failed to fetch suggestions: ${response.status} ${response.statusText}`);
+  }
+
+  return await response.json();
+};
+
 export const analyzeDiagnosis = async (patientId, conversationText, updateExisting = false) => {
   const token = getAuthToken();
   if (!token) {

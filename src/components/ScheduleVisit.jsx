@@ -1,7 +1,7 @@
-  import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { analyzeDiagnosis } from '../api/api';
+import { analyzeDiagnosis, fetchLiveSuggestions } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import { Button, Card, CardHeader, CardContent, Input, Select } from './UI';
 import SidebarLayout from './SideBar';
@@ -66,6 +66,13 @@ const Flask = ({ className = "" }) => (
 const Edit = ({ className = "" }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+  </svg>
+);
+
+const LightBulb = ({ className = "" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 2a7 7 0 00-7 7c0 2.386 1.146 4.493 2.915 5.832A2.996 2.996 0 007 17v1a1 1 0 001 1h4a1 1 0 001-1v-1a2.996 2.996 0 00.085-.168A6.997 6.997 0 0018 9a7 7 0 00-7-7z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 21h6" />
   </svg>
 );
 
@@ -218,6 +225,17 @@ function ConversationDisplay({ conversation, isRecording, onConversationUpdate }
   );
 }
 
+const getPriorityBadgeClass = (priority) => {
+  const value = (priority || '').toLowerCase();
+  if (value === 'urgent') {
+    return 'bg-red-100 text-red-600';
+  }
+  if (value === 'important') {
+    return 'bg-amber-100 text-amber-700';
+  }
+  return 'bg-blue-100 text-blue-700';
+};
+
 function ScheduleVisit() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -239,6 +257,10 @@ function ScheduleVisit() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [clearTrigger, setClearTrigger] = useState(0);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
+  const suggestionAbortRef = useRef(null);
+  const suggestionTimeoutRef = useRef(null);
   const [isCompletingVisit, setIsCompletingVisit] = useState(false);
   const [isOrderingLabTests, setIsOrderingLabTests] = useState(false);
 
@@ -287,6 +309,111 @@ function ScheduleVisit() {
     }
   }, [speakers]);
 
+  useEffect(() => {
+    if (!patient) {
+      if (suggestionAbortRef.current) {
+        suggestionAbortRef.current.abort();
+        suggestionAbortRef.current = null;
+      }
+      if (suggestionTimeoutRef.current) {
+        clearTimeout(suggestionTimeoutRef.current);
+        suggestionTimeoutRef.current = null;
+      }
+      setIsFetchingSuggestions(false);
+      setSuggestions([]);
+      return;
+    }
+
+    if (!speakers || speakers.length === 0) {
+      if (suggestionAbortRef.current) {
+        suggestionAbortRef.current.abort();
+        suggestionAbortRef.current = null;
+      }
+      if (suggestionTimeoutRef.current) {
+        clearTimeout(suggestionTimeoutRef.current);
+        suggestionTimeoutRef.current = null;
+      }
+      setIsFetchingSuggestions(false);
+      setSuggestions([]);
+      return;
+    }
+
+    if (suggestionTimeoutRef.current) {
+      clearTimeout(suggestionTimeoutRef.current);
+    }
+
+    suggestionTimeoutRef.current = setTimeout(() => {
+      if (suggestionAbortRef.current) {
+        suggestionAbortRef.current.abort();
+      }
+      const controller = new AbortController();
+      suggestionAbortRef.current = controller;
+      suggestionTimeoutRef.current = null;
+      setIsFetchingSuggestions(true);
+
+      const payload = {
+        conversation: speakers.slice(-12).map(segment => ({
+          role: segment.speaker === 'A' ? 'doctor' : 'patient',
+          content: segment.text,
+          start: segment.start,
+          end: segment.end
+        })),
+        patient: {
+          id: patient.id || patient._id,
+          name: patient.name,
+          age: patient.age,
+          gender: patient.gender
+        },
+        context: {
+          reason: appointmentData.reason,
+          notes: appointmentData.notes
+        },
+        maxSuggestions: 3
+      };
+
+      fetchLiveSuggestions(payload, controller.signal)
+        .then(response => {
+          if (response.success && response.data && Array.isArray(response.data.suggestions)) {
+            setSuggestions(response.data.suggestions);
+          } else {
+            setSuggestions([]);
+          }
+        })
+        .catch(error => {
+          if (error && error.name === 'AbortError') {
+            return;
+          }
+          setSuggestions([]);
+        })
+        .finally(() => {
+          if (suggestionAbortRef.current === controller) {
+            suggestionAbortRef.current = null;
+          }
+          setIsFetchingSuggestions(false);
+        });
+    }, 600);
+
+    return () => {
+      if (suggestionTimeoutRef.current) {
+        clearTimeout(suggestionTimeoutRef.current);
+        suggestionTimeoutRef.current = null;
+      }
+    };
+  }, [patient, speakers, appointmentData.reason, appointmentData.notes]);
+
+  useEffect(() => {
+    return () => {
+      if (suggestionAbortRef.current) {
+        suggestionAbortRef.current.abort();
+        suggestionAbortRef.current = null;
+      }
+      if (suggestionTimeoutRef.current) {
+        clearTimeout(suggestionTimeoutRef.current);
+        suggestionTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
   const handleInputChange = (field, value) => {
     setAppointmentData(prev => ({
       ...prev,
@@ -317,6 +444,16 @@ function ScheduleVisit() {
     setDiagnosis(null);
     setIsRecording(false);
     setClearTrigger(prev => prev + 1);
+    setSuggestions([]);
+    setIsFetchingSuggestions(false);
+    if (suggestionAbortRef.current) {
+      suggestionAbortRef.current.abort();
+      suggestionAbortRef.current = null;
+    }
+    if (suggestionTimeoutRef.current) {
+      clearTimeout(suggestionTimeoutRef.current);
+      suggestionTimeoutRef.current = null;
+    }
   };
 
   const handleSendForDiagnosis = async () => {
@@ -528,14 +665,14 @@ function ScheduleVisit() {
           {/* Bottom Row - Transcription and Diagnosis */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
             {/* Transcription */}
-            <Card className="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col w-full">
+          <Card className="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col w-full">
               <CardHeader className="bg-red-700 px-4 py-3 rounded-t-xl">
                 <div className="flex items-center space-x-2">
                   <Mic className="w-5 h-5 text-white" />
                   <span className="text-white font-semibold text-base">Transcription</span>
                 </div>
               </CardHeader>
-              <CardContent className="p-4 flex-1 flex flex-col min-h-[300px]">
+            <CardContent className="p-4 flex-1 flex flex-col min-h-[300px] max-h-[420px] overflow-hidden">
                 <ConversationDisplay 
                   conversation={conversation}
                   isRecording={isRecording}
@@ -632,9 +769,45 @@ function ScheduleVisit() {
                 </div>
               </CardContent>
             </Card>
-          </div>
+        </div>
 
-          {/* SpeechCompWithSpeakers component - positioned off-screen but functional */}
+        <Card className="bg-white border border-gray-200 rounded-xl shadow-sm">
+          <CardHeader className="bg-red-700 px-4 py-3 rounded-t-xl">
+            <div className="flex items-center space-x-2">
+              <LightBulb className="w-5 h-5 text-white" />
+              <span className="text-white font-semibold text-base">Live Guidance</span>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 space-y-4 flex flex-col min-h-[300px] max-h-[420px] overflow-hidden">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">Next Best Steps</span>
+              {isFetchingSuggestions && (
+                <span className="text-xs text-blue-600">Updating...</span>
+              )}
+            </div>
+
+            {suggestions.length > 0 ? (
+              <div className="space-y-3 overflow-y-auto pr-1">
+                {suggestions.map((item, idx) => (
+                  <div key={idx} className="border border-gray-200 rounded-lg p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-sm text-gray-900 font-medium">{item.question}</span>
+                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${getPriorityBadgeClass(item.priority)}`}>
+                        {item && item.priority ? item.priority.toUpperCase() : 'ROUTINE'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="border border-dashed border-gray-300 rounded-lg p-4 text-sm text-gray-500 flex-1">
+                {isFetchingSuggestions ? 'Generating real-time guidance...' : 'Start or continue the consultation to receive AI-assisted next questions.'}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* SpeechCompWithSpeakers component - positioned off-screen but functional */}
           <div className="absolute -left-[9999px] -top-[9999px] opacity-0 pointer-events-none">
             <SpeechCompWithSpeakers 
               onTranscriptUpdate={handleTranscriptUpdate}
