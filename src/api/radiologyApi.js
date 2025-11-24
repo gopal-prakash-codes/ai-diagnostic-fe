@@ -53,10 +53,13 @@ export const radiologyApi = {
       // Prefer XMLHttpRequest to get reliable upload progress events
       const headers = getAuthHeaders();
 
-      // Wrap XHR in a Promise
+      // Wrap XHR in a Promise with extended timeout for large files
       const result = await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', `${API_BASE_URL}api/radiology/reports/${reportId}/upload`, true);
+        
+        // Set timeout to 30 minutes for large file uploads (1800000ms)
+        xhr.timeout = 30 * 60 * 1000;
 
         // Set auth headers (do not set Content-Type; browser will set correct multipart boundary)
         Object.entries(headers).forEach(([key, value]) => {
@@ -87,20 +90,29 @@ export const radiologyApi = {
               if (xhr.status >= 200 && xhr.status < 300) {
                 resolve(json);
               } else {
-                reject(new Error(json.message || 'Failed to upload files'));
+                reject(new Error(json.message || `Upload failed with status ${xhr.status}`));
               }
             } catch (e) {
               if (xhr.status >= 200 && xhr.status < 300) {
                 resolve({ success: true, data: [], raw: xhr.responseText });
               } else {
-                reject(new Error('Failed to upload files'));
+                reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.responseText || 'Unknown error'}`));
               }
             }
           }
         };
 
-        xhr.onerror = () => reject(new Error('Network error during upload'));
-        xhr.onabort = () => reject(new Error('Upload aborted'));
+        xhr.ontimeout = () => {
+          reject(new Error('Upload timeout: The file is too large or the connection is too slow. Please try again.'));
+        };
+
+        xhr.onerror = () => {
+          reject(new Error('Network error during upload. Please check your connection and try again.'));
+        };
+        
+        xhr.onabort = () => {
+          reject(new Error('Upload aborted'));
+        };
 
         xhr.send(formData);
       });
@@ -153,6 +165,26 @@ export const radiologyApi = {
       return data;
     } catch (error) {
       console.error('Get analysis result error:', error);
+      throw error;
+    }
+  },
+
+  // Get scan record status (efficient endpoint for polling)
+  getScanRecordStatus: async (scanRecordId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}api/radiology/scans/${scanRecordId}/status`, {
+        headers: getAuthHeaders()
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to get scan record status');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Get scan record status error:', error);
       throw error;
     }
   },

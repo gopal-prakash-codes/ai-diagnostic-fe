@@ -358,3 +358,83 @@ export const getRadiologyReportById = async (reportId) => {
 
   return await response.json();
 };
+
+// Profile API functions
+export const getProfile = async () => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Authentication required. Please login again.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}api/auth/profile`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    }
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || `Failed to fetch profile: ${response.status} ${response.statusText}`);
+  }
+
+  return await response.json();
+};
+
+// Invitation API functions
+export const inviteMember = async (email) => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Authentication required. Please login again.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}api/invitations/invite`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || `Failed to send invitation: ${response.status} ${response.statusText}`);
+  }
+
+  return await response.json();
+};
+
+export const getInvitationByToken = async (token) => {
+  const response = await fetch(`${API_BASE_URL}api/invitations/token/${token}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || `Failed to fetch invitation: ${response.status} ${response.statusText}`);
+  }
+
+  return await response.json();
+};
+
+export const acceptInvitation = async (token, password, firstName, lastName) => {
+  const response = await fetch(`${API_BASE_URL}api/invitations/accept`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ token, password, firstName, lastName })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || `Failed to accept invitation: ${response.status} ${response.statusText}`);
+  }
+
+  return await response.json();
+};

@@ -8,7 +8,6 @@ import { IoIosFlask } from "react-icons/io"
 import { IoCloudUploadOutline, IoEyeOutline, IoDocumentTextOutline, IoTrashOutline, IoCloseOutline, IoCube } from 'react-icons/io5';
 import radiologyApi from '../api/radiologyApi';
 import { getPatients, getPatientById, API_BASE_URL, getAuthHeaders } from '../api/api';
-import Enhanced3DViewer from './Enhanced3DViewer';
 import ProfessionalDICOMViewer from './ProfessionalDICOMViewer';
 
 
@@ -31,7 +30,6 @@ const RadiologyReportDetail = () => {
     const [selectedImage, setSelectedImage] = useState(null);
     const [showImageModal, setShowImageModal] = useState(false);
     const [show3DViewer, setShow3DViewer] = useState(false);
-    const [viewerType, setViewerType] = useState('basic'); // 'basic', '3d', 'volume', 'professional'
     
     // New state for database integration
     const [reportData, setReportData] = useState(null);
@@ -116,17 +114,20 @@ const RadiologyReportDetail = () => {
                         // Update with real data if report exists
                         setReportData(response.data.report);
                         setPatientData(response.data.report.patient);
-                        setScanRecords(response.data.scanRecords || []);
+                        
+                        const scanRecordsData = response.data.scanRecords || [];
+                        setScanRecords(scanRecordsData);
                         setSelectedScanType(response.data.report.reportType);
                         
-                        // Load analysis results from scan records
-                        const results = response.data.scanRecords.map(scan => ({
+                        const results = scanRecordsData
+                            .filter(scan => scan.analysisResult || scan.analysisStatus)
+                            .map(scan => ({
                             id: scan._id,
                             scanType: scan.scanType,
                             fileName: scan.originalFileName,
                             type: scan.fileType,
                             success: scan.analysisStatus === 'completed',
-                            status: scan.analysisStatus,
+                                status: scan.analysisStatus || 'pending',
                             jobId: scan.analysisJobId,
                             analysisResult: scan.analysisResult,
                             scanRecord: scan
@@ -222,9 +223,6 @@ const RadiologyReportDetail = () => {
         patient: { name: "Loading...", age: 0, gender: "male" },
         reportType: selectedScanType || "Report",
         date: new Date().toISOString(),
-        doctor: "Dr. [To be filled]",
-        clinicName: "Clinic [To be filled]",
-        clinicAddress: "Address [To be filled]",
         symptoms: ["Pending Analysis"],
         diagnosis: "Pending Analysis - Upload and analyze medical images to generate diagnosis",
         confidence: 0,
@@ -272,9 +270,6 @@ const RadiologyReportDetail = () => {
                 const reportPayload = {
                     patientId: patientResponse.data._id,
                     reportType: selectedScanType || 'Report',
-                    doctor: reportData?.doctor || "Dr. [To be filled]",
-                    clinicName: reportData?.clinicName || "Clinic [To be filled]",
-                    clinicAddress: reportData?.clinicAddress || "Address [To be filled]",
                     symptoms: reportData?.symptoms || ["Pending Analysis"],
                     diagnosis: reportData?.diagnosis || "Pending Analysis - Upload and analyze medical images to generate diagnosis",
                     confidence: reportData?.confidence || 0,
@@ -433,6 +428,9 @@ const RadiologyReportDetail = () => {
         
         setIsAnalyzing2D(true);
         
+        let uploadResponse = null;
+        let uploadResult = null;
+        
         try {
             // First, ensure we have a saved report
             const currentReport = await ensureReportExists();
@@ -443,7 +441,7 @@ const RadiologyReportDetail = () => {
             formData.append('scanType', selectedScanType);
             // Show upload progress similar to OHIF download
             const toastId = toast.loading('Uploading image... 0%', { autoClose: false, closeButton: false });
-            const uploadResponse = await radiologyApi.uploadScanFiles(
+            uploadResponse = await radiologyApi.uploadScanFiles(
                 currentReport.reportId,
                 formData,
                 (percent, loaded, total) => {
@@ -459,15 +457,26 @@ const RadiologyReportDetail = () => {
             toast.update(toastId, { render: 'Image uploaded', type: 'success', isLoading: false, autoClose: 2500, closeButton: true });
             
             if (uploadResponse.success && uploadResponse.data.length > 0) {
-                const uploadResult = uploadResponse.data.find(result => result.type === '2D');
+                uploadResult = uploadResponse.data.find(result => result.type === '2D');
                 
                 if (uploadResult) {
                     
                     // Start analysis
-                    const analysisResponse = await radiologyApi.startAnalysis(
-                        uploadResult.scanRecord._id, 
-                        '2D'
-                    );
+                    let analysisResponse;
+                    try {
+                        analysisResponse = await radiologyApi.startAnalysis(
+                            uploadResult.scanRecord._id, 
+                            '2D'
+                        );
+                    } catch (analysisError) {
+                        // If analysis start fails, update the scan record status locally
+                        setScanRecords(prev => prev.map(scan => 
+                            scan._id === uploadResult.scanRecord._id 
+                                ? { ...scan, analysisStatus: 'failed', analysisCompletedAt: new Date() }
+                                : scan
+                        ));
+                        throw analysisError;
+                    }
                     
                     if (analysisResponse.success) {
                         // Add to analysis results for UI tracking
@@ -488,19 +497,11 @@ const RadiologyReportDetail = () => {
                         
                         const pollForCompletion = setInterval(async () => {
                             try {
-                                const reportResponse = await radiologyApi.getReport(currentReport.reportId);
-                                if (reportResponse.success) {
-                                    const updatedScanRecords = reportResponse.data.scanRecords || [];
-                                    const updatedScan = updatedScanRecords.find(scan => scan._id === uploadResult.scanRecord._id);
+                                const statusResponse = await radiologyApi.getScanRecordStatus(uploadResult.scanRecord._id);
+                                if (statusResponse.success) {
+                                    const scanData = statusResponse.data;
                                     
-                                    console.log('🔍 3D Polling Debug:', {
-                                        reportResponse: reportResponse,
-                                        updatedScanRecords: updatedScanRecords,
-                                        updatedScan: updatedScan,
-                                        uploadResultScanId: uploadResult.scanRecord._id
-                                    });
-                                    
-                                    if (updatedScan && updatedScan.analysisStatus === 'completed') {
+                                    if (scanData.analysisStatus === 'completed') {
                                         clearInterval(pollForCompletion);
                                         
                                         // Update the result in state
@@ -510,18 +511,20 @@ const RadiologyReportDetail = () => {
                                                     ...result, 
                                                     status: 'completed', 
                                                     success: true,
-                                                    analysisResult: updatedScan.analysisResult,
-                                                    scanRecord: updatedScan
+                                                    analysisResult: scanData.analysisResult,
+                                                    scanRecord: { ...uploadResult.scanRecord, ...scanData }
                                                 }
                                                 : result
                                         ));
                                         
                                         setScanRecords(prev => prev.map(scan => 
-                                            scan._id === uploadResult.scanRecord._id ? updatedScan : scan
+                                            scan._id === uploadResult.scanRecord._id 
+                                                ? { ...scan, ...scanData, analysisResult: scanData.analysisResult }
+                                                : scan
                                         ));
                                         
                                         toast.success('2D Analysis completed!');
-                                    } else if (updatedScan && updatedScan.analysisStatus === 'failed') {
+                                    } else if (scanData.analysisStatus === 'failed') {
                                         clearInterval(pollForCompletion);
                                         
                                         setAnalysisResults(prev => prev.map(result => 
@@ -531,7 +534,7 @@ const RadiologyReportDetail = () => {
                                         ));
                                         
                                         // Get error message from analysis result
-                                        const errorMsg = updatedScan.analysisResult?.errorMessage || 'Analysis failed';
+                                        const errorMsg = scanData.analysisResult?.errorMessage || 'Analysis failed';
                                         const shortError = errorMsg.length > 100 ? 
                                             errorMsg.substring(0, 100) + '...' : errorMsg;
                                         
@@ -553,7 +556,20 @@ const RadiologyReportDetail = () => {
             
         } catch (error) {
             console.error('2D Analysis error:', error);
-            toast.error(error.message || 'An error occurred during 2D analysis. Please try again.');
+            const errorMessage = error.message || 'An error occurred during 2D analysis. Please try again.';
+            toast.error(errorMessage);
+            
+            // If upload succeeded but analysis failed, mark the scan record as failed
+            // This ensures hasAnyActiveAnalysis doesn't block future attempts
+            if (uploadResponse?.success && uploadResponse?.data?.length > 0 && uploadResult) {
+                setScanRecords(prev => prev.map(scan => 
+                    scan._id === uploadResult.scanRecord._id 
+                        ? { ...scan, analysisStatus: 'failed', analysisCompletedAt: new Date() }
+                        : scan
+                ));
+                
+                setAnalysisResults(prev => prev.filter(result => result.id !== uploadResult.scanRecord._id));
+            }
         } finally {
             setIsAnalyzing2D(false);
         }
@@ -577,6 +593,9 @@ const RadiologyReportDetail = () => {
         
         setIsAnalyzing3D(true);
         
+        let uploadResponse = null;
+        let uploadResult = null;
+        
         try {
             // First, ensure we have a saved report
             const currentReport = await ensureReportExists();
@@ -585,9 +604,8 @@ const RadiologyReportDetail = () => {
             const formData = new FormData();
             formData.append('zipFile', uploadedZipFile);
             formData.append('scanType', selectedScanType);
-            // Show upload progress similar to OHIF download
             const toastId = toast.loading('Uploading ZIP... 0%', { autoClose: false, closeButton: false });
-            const uploadResponse = await radiologyApi.uploadScanFiles(
+            uploadResponse = await radiologyApi.uploadScanFiles(
                 currentReport.reportId,
                 formData,
                 (percent, loaded, total) => {
@@ -602,15 +620,26 @@ const RadiologyReportDetail = () => {
             toast.update(toastId, { render: 'ZIP uploaded', type: 'success', isLoading: false, autoClose: 2500, closeButton: true });
             
             if (uploadResponse.success && uploadResponse.data.length > 0) {
-                const uploadResult = uploadResponse.data.find(result => result.type === '3D');
+                uploadResult = uploadResponse.data.find(result => result.type === '3D');
                 
                 if (uploadResult) {
                     
                     // Start analysis
-                    const analysisResponse = await radiologyApi.startAnalysis(
-                        uploadResult.scanRecord._id, 
-                        '3D'
-                    );
+                    let analysisResponse;
+                    try {
+                        analysisResponse = await radiologyApi.startAnalysis(
+                            uploadResult.scanRecord._id, 
+                            '3D'
+                        );
+                    } catch (analysisError) {
+                        // If analysis start fails, update the scan record status locally
+                        setScanRecords(prev => prev.map(scan => 
+                            scan._id === uploadResult.scanRecord._id 
+                                ? { ...scan, analysisStatus: 'failed', analysisCompletedAt: new Date() }
+                                : scan
+                        ));
+                        throw analysisError;
+                    }
                     
                     if (analysisResponse.success) {
                         // Add to analysis results for UI tracking
@@ -632,13 +661,11 @@ const RadiologyReportDetail = () => {
                         
                         const pollForCompletion = setInterval(async () => {
                             try {
-                                const reportResponse = await radiologyApi.getReport(currentReport.reportId);
-                                if (reportResponse.success) {
-                                    const updatedScanRecords = reportResponse.data.scanRecords || [];
-                                    const updatedScan = updatedScanRecords.find(scan => scan._id === uploadResult.scanRecord._id);
+                                const statusResponse = await radiologyApi.getScanRecordStatus(uploadResult.scanRecord._id);
+                                if (statusResponse.success) {
+                                    const scanData = statusResponse.data;
                                     
-                                    
-                                    if (updatedScan && updatedScan.analysisStatus === 'completed') {
+                                    if (scanData.analysisStatus === 'completed') {
                                         clearInterval(pollForCompletion);
                                         
                                         // Update the result in state
@@ -648,18 +675,20 @@ const RadiologyReportDetail = () => {
                                                     ...result, 
                                                     status: 'completed', 
                                                     success: true,
-                                                    analysisResult: updatedScan.analysisResult,
-                                                    scanRecord: updatedScan
+                                                    analysisResult: scanData.analysisResult,
+                                                    scanRecord: { ...uploadResult.scanRecord, ...scanData }
                                                 }
                                                 : result
                                         ));
                                         
                                         setScanRecords(prev => prev.map(scan => 
-                                            scan._id === uploadResult.scanRecord._id ? updatedScan : scan
+                                            scan._id === uploadResult.scanRecord._id 
+                                                ? { ...scan, ...scanData, analysisResult: scanData.analysisResult }
+                                                : scan
                                         ));
                                         
                                         toast.success('3D Analysis completed!');
-                                    } else if (updatedScan && updatedScan.analysisStatus === 'failed') {
+                                    } else if (scanData.analysisStatus === 'failed') {
                                         clearInterval(pollForCompletion);
                                         
                                         setAnalysisResults(prev => prev.map(result => 
@@ -669,7 +698,7 @@ const RadiologyReportDetail = () => {
                                         ));
                                         
                                         // Get error message from analysis result
-                                        const errorMsg = updatedScan.analysisResult?.errorMessage || 'Analysis failed';
+                                        const errorMsg = scanData.analysisResult?.errorMessage || 'Analysis failed';
                                         const shortError = errorMsg.length > 100 ? 
                                             errorMsg.substring(0, 100) + '...' : errorMsg;
                                         
@@ -691,14 +720,27 @@ const RadiologyReportDetail = () => {
             
         } catch (error) {
             console.error('3D Analysis error:', error);
-            toast.error(error.message || 'An error occurred during 3D analysis. Please try again.');
+            const errorMessage = error.message || 'An error occurred during 3D analysis. Please try again.';
+            toast.error(errorMessage);
+            
+            // If upload succeeded but analysis failed, mark the scan record as failed
+            // This ensures hasAnyActiveAnalysis doesn't block future attempts
+            if (uploadResponse?.success && uploadResponse?.data?.length > 0 && uploadResult) {
+                setScanRecords(prev => prev.map(scan => 
+                    scan._id === uploadResult.scanRecord._id 
+                        ? { ...scan, analysisStatus: 'failed', analysisCompletedAt: new Date() }
+                        : scan
+                ));
+                
+                setAnalysisResults(prev => prev.filter(result => result.id !== uploadResult.scanRecord._id));
+            }
         } finally {
             setIsAnalyzing3D(false);
         }
     };
     
     
-    const handleViewImage = async (scanRecordId, fileName, fileType = 'original', viewerType = 'basic') => {
+    const handleViewImage = async (scanRecordId, fileName, fileType = 'original') => {
         try {
             const response = await radiologyApi.generateDownloadUrl(scanRecordId, fileType);
             
@@ -708,13 +750,7 @@ const RadiologyReportDetail = () => {
                     fileName: fileName,
                     fileType: fileType
                 });
-                setViewerType(viewerType);
-                
-                if (viewerType === '3d' || viewerType === 'volume' || viewerType === 'professional') {
                     setShow3DViewer(true);
-                } else {
-                    setShowImageModal(true);
-                }
             } else {
                 toast.error('Failed to load image.');
             }
@@ -797,7 +833,6 @@ const RadiologyReportDetail = () => {
     const close3DViewer = () => {
         setShow3DViewer(false);
         setSelectedImage(null);
-        setViewerType('basic');
     };
     
     const handleViewResult = async (result) => {
@@ -843,7 +878,6 @@ const RadiologyReportDetail = () => {
     // Generate table data from analysis results
     const getTableData = () => {
         if (analysisResults.length === 0 && scanRecords.length === 0) {
-            // Return empty array if no results - don't show sample data
             return [];
         }
         
@@ -867,21 +901,21 @@ const RadiologyReportDetail = () => {
                 scanRecord: result.scanRecord
             };
             
-            
             combinedData.push(tableRow);
         });
         
         // Add scan records that don't have analysis results yet
         scanRecords.forEach((scanRecord) => {
-            const existingResult = analysisResults.find(r => r.id === scanRecord._id);
+            // Check if this scan record is already in combinedData (from analysisResults)
+            const existingInCombined = combinedData.find(item => item.id === scanRecord._id);
             
-            if (!existingResult) {
+            if (!existingInCombined) {
                 const tableRow = {
                     id: scanRecord._id,
-                    scanType: scanRecord.scanType,
-                    fileName: scanRecord.originalFileName,
-                    type: scanRecord.fileType,
-                    originalDicom: "available",
+                    scanType: scanRecord.scanType || 'Report',
+                    fileName: scanRecord.originalFileName || scanRecord.fileName || 'Unknown',
+                    type: scanRecord.fileType || '2D',
+                    originalDicom: scanRecord.originalFileKey || scanRecord.originalFileUrl ? "available" : "pending",
                     analysedDicom: scanRecord.analysisStatus === 'processing' ? 'processing' : 
                                   scanRecord.analysisStatus === 'completed' ? 'available' : 
                                   scanRecord.analysisStatus === 'failed' ? 'failed' : 'pending',
@@ -894,6 +928,7 @@ const RadiologyReportDetail = () => {
             }
         });
         
+        console.log('✅ [getTableData] Combined data:', combinedData);
         return combinedData;
     };
 
@@ -918,12 +953,11 @@ const RadiologyReportDetail = () => {
         <SidebarLayout isOpen={isOpen}>
             <Navbar toggleSidebar={toggleSidebar} user={user} logout={logout} />
             <div className={`h-[calc(100vh_-_96px)] bg-[#F8FAFC] font-sans overflow-y-auto relative pb-20 ${show3DViewer ? 'p-1' : 'p-4 sm:p-6 md:p-8'}`}>
-                {/* Enhanced 3D Viewer - Replaces main content */}
+                {/* Professional DICOM Viewer - Replaces main content */}
                 {show3DViewer && selectedImage ? (
                     <div className="bg-white rounded-lg shadow-lg p-0 h-[calc(100vh_-_110px)]">
                         {/* Viewer content */}
                         <div className="relative h-full">
-                            {viewerType === 'professional' ? (
                                 <ProfessionalDICOMViewer
                                     dicomUrl={selectedImage.url}
                                     fileName={selectedImage.fileName}
@@ -931,15 +965,6 @@ const RadiologyReportDetail = () => {
                                     onClose={close3DViewer}
                                     isIntegrated={true}
                                 />
-                            ) : (
-                                <Enhanced3DViewer
-                                    dicomUrl={selectedImage.url}
-                                    fileName={selectedImage.fileName}
-                                    fileType={selectedImage.fileType}
-                                    onClose={close3DViewer}
-                                    isIntegrated={true}
-                                />
-                            )}
                         </div>
                     </div>
                 ) : (
@@ -1215,7 +1240,7 @@ const RadiologyReportDetail = () => {
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex flex-col">
                                                         <span className="text-xs font-small text-[#172B4C] mb-0">
-                                                            {scan.type === '3D' ? 'DICOM' : '2D'}
+                                                            {scan.scanType || (scan.type === '3D' ? 'DICOM' : '2D')}
                                                         </span>
                                                         {scan.fileName && (
                                                             <span className="text-sm text-gray-700 truncate max-w-32" title={scan.fileName}>
@@ -1225,7 +1250,8 @@ const RadiologyReportDetail = () => {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {scan.scanType === 'DICOM' ? (
+                                                    {/* Show view button for all scan types (MRI, CT-SCAN, X-RAY, DICOM, Report) if original file is available */}
+                                                    {(scan.scanType === 'DICOM' || scan.scanType === 'MRI' || scan.scanType === 'CT-SCAN' || scan.scanType === 'X-RAY' || scan.scanType === 'Report') ? (
                                                         scan.originalDicom === 'available' ? (
                                                             <button 
                                                                 onClick={() => withViewingImage(scan.scanRecord?._id || scan.id, async () => {
@@ -1261,8 +1287,7 @@ const RadiologyReportDetail = () => {
                                                                     await handleViewImage(
                                                                         scan.scanRecord?._id || scan.id, 
                                                                         scan.fileName,
-                                                                        'original',
-                                                                        'professional'
+                                                                        'original'
                                                                     );
                                                                 })}
                                                                 disabled={viewingImageIds.has(scan.scanRecord?._id || scan.id)}
@@ -1290,17 +1315,16 @@ const RadiologyReportDetail = () => {
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {/* Only show processed images for 3D/DICOM analysis */}
+                                                    {/* Show processed images for 3D analysis (all scan types) */}
                                                     {scan.type === '3D' ? (
-                                                        (scan.scanType === 'DICOM' || scan.scanType === 'Report') ? (
+                                                        (scan.scanType === 'DICOM' || scan.scanType === 'MRI' || scan.scanType === 'CT-SCAN' || scan.scanType === 'X-RAY' || scan.scanType === 'Report') ? (
                                                             scan.analysedDicom === 'available' ? (
                                                                 <button 
                                                                     onClick={() => withViewingImage((scan.scanRecord?._id || scan.id) + '-processed', async () => {
                                                                         await handleViewImage(
                                                                             scan.scanRecord?._id || scan.id, 
                                                                             scan.fileName,
-                                                                            'analyzed',
-                                                                            'professional'
+                                                                            'analyzed'
                                                                         );
                                                                     })}
                                                                     disabled={viewingImageIds.has((scan.scanRecord?._id || scan.id) + '-processed')}
@@ -1337,38 +1361,8 @@ const RadiologyReportDetail = () => {
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {scan.scanType === 'Report' ? (
-                                                        scan.report === 'available' ? (
-                                                            <div className="flex gap-2">
-                                                                <button 
-                                                                    onClick={() => withViewingResult(scan.scanRecord?._id || scan.id, async () => { await handleViewResult(scan.result); })}
-                                                                    disabled={viewingResultIds.has(scan.scanRecord?._id || scan.id)}
-                                                                    className={`inline-flex items-center px-3 py-1 rounded-md text-sm border transition-colors ${viewingResultIds.has(scan.scanRecord?._id || scan.id) ? 'border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed' : 'border-[black] text-[black] hover:bg-gray-100'}`}
-                                                                >
-                                                                    {viewingResultIds.has(scan.scanRecord?._id || scan.id) ? (
-                                                                        <>
-                                                                            <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                                                            Opening…
-                                                                        </>
-                                                                    ) : (
-                                                                        <>
-                                                                            <IoDocumentTextOutline className="mr-1" /> View Report
-                                                                        </>
-                                                                    )}
-                                                                </button>
-                                                            </div>
-                                                        ) : scan.report === 'pending' ? (
-                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                                                                Pending
-                                                            </span>
-                                                        ) : scan.report === 'failed' ? (
-                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                                Failed
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-gray-400 text-sm">Not Available</span>
-                                                        )
-                                                    ) : scan.scanType === 'DICOM' ? (
+                                                    {/* Show report for all scan types */}
+                                                    {(scan.scanType === 'Report' || scan.scanType === 'DICOM' || scan.scanType === 'MRI' || scan.scanType === 'CT-SCAN' || scan.scanType === 'X-RAY') ? (
                                                         scan.report === 'available' ? (
                                                             <div className="flex gap-2">
                                                                 <button 

@@ -106,7 +106,21 @@ const ProfessionalDICOMViewer = ({
         decodeConfig: {
           convertFloatPixelDataToInt: false,
         },
+        // Increase timeout for large DICOM files (30 minutes)
+        maxWebWorkers: navigator.hardwareConcurrency || 4,
+        taskConfiguration: {
+          decodeTask: {
+            initializeCodecsOnStartup: false,
+            usePDFJS: false,
+            strict: false,
+          },
+        },
       });
+      
+      // Set global timeout for image loading (30 minutes for large files)
+      if (cornerstoneWADOImageLoader.wadouri) {
+        cornerstoneWADOImageLoader.wadouri.timeout = 30 * 60 * 1000; // 30 minutes
+      }
 
       setCornerstoneInitialized(true);
       console.log('Cornerstone initialized successfully');
@@ -230,10 +244,43 @@ const ProfessionalDICOMViewer = ({
     });
     
     try {
-      // Fetch with progress tracking
-      const response = await fetch(zipUrl);
+      // Fetch with progress tracking and extended timeout for large files (up to 1GB)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+        toast.update(toastId, {
+          render: '❌ Download timeout: File is too large or connection is slow. Please try again.',
+          type: 'error',
+          isLoading: false,
+          autoClose: 5000
+        });
+      }, 30 * 60 * 1000); // 30 minute timeout for large files
+      
+      let response;
+      try {
+        response = await fetch(zipUrl, {
+          signal: controller.signal,
+          // Add headers to help with large file downloads
+          headers: {
+            'Accept': 'application/zip, application/octet-stream, */*',
+            'Accept-Encoding': 'gzip, deflate, br', // Enable compression
+            'Cache-Control': 'no-cache',
+          },
+          // Enable keep-alive for better connection reuse
+          keepalive: true,
+          // Don't set mode or credentials as they might interfere with signed URLs
+        });
+        clearTimeout(timeoutId);
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Download timeout: The file is too large or the connection is too slow. Please try again.');
+        }
+        throw fetchError;
+      }
+      
       if (!response.ok) {
-        throw new Error(`Failed to fetch ZIP file: ${response.status}`);
+        throw new Error(`Failed to fetch ZIP file: ${response.status} ${response.statusText}`);
       }
 
       // Get content length for progress
@@ -253,7 +300,8 @@ const ProfessionalDICOMViewer = ({
 
       // Stream download with progress (throttled updates)
       let lastUpdate = 0;
-      const updateThrottle = 200; // Update toast max every 200ms
+      const updateThrottle = 500; // Update toast max every 500ms to reduce UI updates
+      const startTime = Date.now();
       
       while (true) {
         const { done, value } = await reader.read();
@@ -268,12 +316,16 @@ const ProfessionalDICOMViewer = ({
           const progress = Math.round((loaded / total) * 100);
           const loadedMB = (loaded / (1024 * 1024)).toFixed(1);
           const totalMB = (total / (1024 * 1024)).toFixed(1);
+          const elapsed = ((now - startTime) / 1000).toFixed(0);
+          const speed = loaded > 0 ? (loaded / (1024 * 1024) / ((now - startTime) / 1000)).toFixed(1) : '0';
+          const remaining = total > loaded && speed > 0 ? ((total - loaded) / (1024 * 1024) / parseFloat(speed)).toFixed(0) : '?';
           
           // Update the same toast with progress
           toast.update(toastId, {
-            render: `📥 Downloading: ${progress}% (${loadedMB}/${totalMB} MB)`,
+            render: `📥 Downloading: ${progress}% (${loadedMB}/${totalMB} MB) - ${speed} MB/s - ETA: ${remaining}s`,
             type: 'info',
-            isLoading: true
+            isLoading: true,
+            autoClose: false
           });
           
           lastUpdate = now;
@@ -885,9 +937,9 @@ const ProfessionalDICOMViewer = ({
         setError(null);
         const loadingTimeout = setTimeout(() => {
           console.error('Loading timeout - viewer taking too long to load');
-          setError('Viewer is taking too long to load. Please check your network connection and try again.');
+          setError('Viewer is taking too long to load. Large files may take several minutes. Please wait...');
           setIsLoading(false);
-        }, 60000); // Reduced to 60 seconds
+        }, 30 * 60 * 1000); // 30 minutes for large files (up to 1GB)
 
         // Initialize Cornerstone
         initializeCornerstone();

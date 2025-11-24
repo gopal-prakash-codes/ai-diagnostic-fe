@@ -13,6 +13,8 @@ import SidebarLayout from './components/SideBar'
 import RadiologyReports from "./components/RadiologyReports"
 import RadiologyReportDetail from './components/RadiologyReportDetail'
 import ReportView from './components/ReportView'
+import ProfileDashboard from './components/ProfileDashboard'
+import AcceptInvitation from './components/AcceptInvitation'
  
 
 
@@ -72,6 +74,9 @@ const AppContent = () => {
           <Signup />
         </PublicRoute>
       } />
+      <Route path="/accept-invitation/:token" element={
+        <AcceptInvitation />
+      } />
       
       {/* Protected Routes */}
       <Route path="/patient/:patientId/history" element={
@@ -106,6 +111,11 @@ const AppContent = () => {
           <SidebarLayout>
             <ReportView />
           </SidebarLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/profile" element={
+        <ProtectedRoute>
+          <ProfileDashboard />
         </ProtectedRoute>
       } />
 

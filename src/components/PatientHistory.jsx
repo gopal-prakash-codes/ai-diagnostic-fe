@@ -135,7 +135,7 @@ function DiagnosisHistoryCard({ diagnosis }) {
             </div>
           </div>
           <div className="flex items-center">
-            <span className="text-sm text-gray-500">by {diagnosis.doctor}</span>
+            <span className="text-sm text-gray-500">AI Diagnosis</span>
           </div>
         </div>
       </CardHeader>
@@ -380,7 +380,7 @@ function VisitHistoryCards({ diagnoses, selectedDate, onClearFilter }) {
               <p className="text-sm text-gray-600">Medical Consultation</p>
             </div>
             <div className="flex items-center space-x-2 mt-2 sm:mt-0">
-              <span className="text-sm font-medium text-gray-900">Dr {currentSession.doctor}</span>
+              <span className="text-sm font-medium text-gray-900">AI System</span>
               {currentSession.confidence && (
                 <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                   currentSession.confidence >= 70 ? 'bg-green-100 text-green-800' :

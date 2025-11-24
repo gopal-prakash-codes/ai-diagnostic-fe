@@ -40,7 +40,7 @@ function DiagnosisHistoryCard({ diagnosis }) {
           <span className="text-gray-900 font-semibold">{formatDate(diagnosis.createdAt)}</span>
           <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
           <span className="text-gray-600">
-            Dr {diagnosis.doctor}
+            AI System
           </span>
         </div>
       </div>

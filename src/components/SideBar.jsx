@@ -4,11 +4,14 @@ import { MdOutlineContactPage } from "react-icons/md";
 import { HiClipboardList } from "react-icons/hi";
 import { useLocation } from 'react-router-dom';
 import { IoIosFlask } from "react-icons/io";
+import { HiOutlineUser } from "react-icons/hi";
+import { useAuth } from "../context/AuthContext";
 
 import logo from "../assets/logo.png"
 
 export default function SidebarLayout({ isOpen, children }) {
   const location = useLocation();
+  const { user } = useAuth();
 
   useEffect(() => {
     console.log(location.pathname);
@@ -36,21 +39,51 @@ export default function SidebarLayout({ isOpen, children }) {
         </div>
 
         {/* Sidebar items */}
-        <nav className="mt-4 pl-2 sm:pl-3 flex flex-col gap-y-6">
-          <Link to={"/patient-record"} className={`${location.pathname === "/patient-record" ? `text-white` : `text-gray-300 hover:text-white`} flex items-center justify-center sm:justify-start w-full font-[family-name:var(--font-gabarito)] transition-colors duration-200`}>
-            <div className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg transition-transform duration-200 ${location.pathname === "/patient-record" ? 'bg-gradient-to-r from-red-500 to-black' : 'hover:-translate-y-0.5'}`}>
-              <span className='text-xl'><MdOutlineContactPage /></span>
-              {isOpen && <span className="text-sm font-medium">Patient Records</span>}
-            </div>
-          </Link>
+        <div className="flex flex-col h-[calc(100vh-64px)]">
+          <nav className="mt-4 pl-2 sm:pl-3 flex flex-col gap-y-6 flex-1">
+            <Link to={"/patient-record"} className={`${location.pathname === "/patient-record" ? `text-white` : `text-gray-300 hover:text-white`} flex items-center justify-center sm:justify-start w-full font-[family-name:var(--font-gabarito)] transition-colors duration-200`}>
+              <div className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg transition-transform duration-200 ${location.pathname === "/patient-record" ? 'bg-gradient-to-r from-red-500 to-black' : 'hover:-translate-y-0.5'}`}>
+                <span className='text-xl'><MdOutlineContactPage /></span>
+                {isOpen && <span className="text-sm font-medium">Patient Records</span>}
+              </div>
+            </Link>
 
-          <Link to={"/radiology"} className={`${location.pathname === "/radiology" || location.pathname.startsWith("/radiology-report") || location.pathname.startsWith("/report-view") ? `text-white` : `text-gray-300 hover:text-white`} flex items-center justify-center sm:justify-start w-full font-[family-name:var(--font-gabarito)] transition-colors duration-200`}>
-            <div className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg transition-transform duration-200 ${location.pathname === "/radiology" || location.pathname.startsWith("/radiology-report") || location.pathname.startsWith("/report-view") ? 'bg-gradient-to-r from-red-500 to-black' : 'hover:-translate-y-0.5'}`}>
-              <span className='text-xl'><IoIosFlask /></span>
-              {isOpen && <span className="text-sm font-medium">Radiology</span>}
+            <Link to={"/radiology"} className={`${location.pathname === "/radiology" || location.pathname.startsWith("/radiology-report") || location.pathname.startsWith("/report-view") ? `text-white` : `text-gray-300 hover:text-white`} flex items-center justify-center sm:justify-start w-full font-[family-name:var(--font-gabarito)] transition-colors duration-200`}>
+              <div className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg transition-transform duration-200 ${location.pathname === "/radiology" || location.pathname.startsWith("/radiology-report") || location.pathname.startsWith("/report-view") ? 'bg-gradient-to-r from-red-500 to-black' : 'hover:-translate-y-0.5'}`}>
+                <span className='text-xl'><IoIosFlask /></span>
+                {isOpen && <span className="text-sm font-medium">Radiology</span>}
+              </div>
+            </Link>
+
+            <Link to={"/profile"} className={`${location.pathname === "/profile" ? `text-white` : `text-gray-300 hover:text-white`} flex items-center justify-center sm:justify-start w-full font-[family-name:var(--font-gabarito)] transition-colors duration-200`}>
+              <div className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg transition-transform duration-200 ${location.pathname === "/profile" ? 'bg-gradient-to-r from-red-500 to-black' : 'hover:-translate-y-0.5'}`}>
+                <span className='text-xl'><HiOutlineUser /></span>
+                {isOpen && <span className="text-sm font-medium">Profile</span>}
+              </div>
+            </Link>
+          </nav>
+
+          {/* User Info at bottom */}
+          {isOpen && user && (
+            <div className="p-4 border-t border-gray-700 bg-black mt-auto">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-sm font-medium">
+                    {user.firstName?.[0]}{user.lastName?.[0]}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm font-medium truncate">
+                    {user.firstName} {user.lastName}
+                  </p>
+                  <p className="text-gray-400 text-xs truncate">
+                    {user.email}
+                  </p>
+                </div>
+              </div>
             </div>
-          </Link>
-        </nav>
+          )}
+        </div>
       </div>
 
       {/* Main Content */}

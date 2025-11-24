@@ -39,7 +39,7 @@ function DiagnosisHistoryCard({ diagnosis }) {
             </div>
           </div>
           <div className="flex items-center">
-            <span className="text-sm text-gray-500">by {diagnosis.doctor}</span>
+            <span className="text-sm text-gray-500">AI Diagnosis</span>
           </div>
         </div>
       </CardHeader>

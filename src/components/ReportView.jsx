@@ -23,7 +23,6 @@ const ReportView = () => {
       setLoading(true);
       
       if (reportId && !reportId.startsWith('new-')) {
-        console.log('Loading existing report:', reportId);
         const response = await radiologyApi.getReport(reportId);
         
         if (response.success && response.data) {
@@ -33,14 +32,10 @@ const ReportView = () => {
           setPatientData(report.patient);
           setScanRecords(records || []);
           
-          // Extract analysis results from scan records
           const results = records
             ?.filter(record => record.analysisResult)
             ?.map(record => record.analysisResult) || [];
           setAnalysisResults(results);
-          
-          console.log('Report data loaded:', report);
-          console.log('Scan records loaded:', records);
         }
       }
     } catch (error) {
@@ -53,7 +48,6 @@ const ReportView = () => {
   const handleViewResult = async (result) => {
     try {
       if (result._id) {
-        console.log('Fetching detailed analysis result for:', result._id);
         const detailedResult = await radiologyApi.getAnalysisResult(result._id);
         
         if (detailedResult.success && detailedResult.data) {
@@ -215,14 +209,6 @@ const ReportView = () => {
           <div className="detail-row">
             <span className="label">Report ID:</span>
             <span className="value">{reportData.reportId}</span>
-          </div>
-          <div className="detail-row">
-            <span className="label">Doctor:</span>
-            <span className="value">{reportData.doctor}</span>
-          </div>
-          <div className="detail-row">
-            <span className="label">Clinic:</span>
-            <span className="value">{reportData.clinicName}</span>
           </div>
           <div className="detail-row">
             <span className="label">Date:</span>
